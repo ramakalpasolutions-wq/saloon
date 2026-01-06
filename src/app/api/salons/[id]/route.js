@@ -1,7 +1,5 @@
 import { clientPromise } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { verifyToken } from '@/lib/auth';
-import { getTokenFromRequest } from '@/lib/getToken';
 
 // GET single salon
 export async function GET(request, { params }) {
@@ -21,43 +19,17 @@ export async function GET(request, { params }) {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB_NAME || 'saloon');
     
-    const salons = await db.collection('salons').aggregate([
-      { $match: { _id: new ObjectId(id) } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'adminId',
-          foreignField: '_id',
-          as: 'adminData',
-        },
-      },
-      {
-        $lookup: {
-          from: 'staff',
-          localField: '_id',
-          foreignField: 'salonId',
-          as: 'staff',
-        },
-      },
-      {
-        $lookup: {
-          from: 'services',
-          localField: '_id',
-          foreignField: 'salonId',
-          as: 'services',
-        },
-      },
-    ]).toArray();
+    const salon = await db.collection('salons').findOne({ 
+      _id: new ObjectId(id) 
+    });
 
-    if (!salons || salons.length === 0) {
+    if (!salon) {
       console.error('❌ Salon not found with ID:', id);
       return Response.json({ 
         success: false, 
         error: 'Salon not found' 
       }, { status: 404 });
     }
-
-    const salon = salons[0];
 
     console.log('✅ Found salon:', salon.name);
 
@@ -66,20 +38,7 @@ export async function GET(request, { params }) {
       salon: {
         ...salon,
         _id: salon._id.toString(),
-        adminId: salon.adminData?.[0] ? {
-          _id: salon.adminData[0]._id.toString(),
-          name: salon.adminData[0].name,
-          email: salon.adminData[0].email,
-          phone: salon.adminData[0].phone,
-        } : null,
-        staff: salon.staff.map(s => ({
-          ...s,
-          _id: s._id.toString(),
-        })),
-        services: salon.services.map(s => ({
-          ...s,
-          _id: s._id.toString(),
-        })),
+        adminId: salon.adminId?.toString(),
       }
     });
   } catch (error) {
@@ -96,17 +55,6 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const { id } = await params;
-    
-    // Authentication check
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userData = verifyToken(token);
-    if (!userData || userData.role !== 'main-admin') {
-      return Response.json({ error: 'Unauthorized' }, { status: 403 });
-    }
     
     console.log('🔄 PUT request for salon ID:', id);
     
@@ -138,17 +86,12 @@ export async function PUT(request, { params }) {
     }
 
     console.log('✅ Found salon to update:', existingSalon.name);
-
-    // Prepare update data
-    const updateData = { ...body };
-    delete updateData._id; // Remove _id from update
-    delete updateData.createdAt; // Preserve original createdAt
     
     const result = await db.collection('salons').updateOne(
       { _id: new ObjectId(id) },
       { 
         $set: {
-          ...updateData,
+          ...body,
           updatedAt: new Date()
         }
       }
@@ -175,17 +118,6 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
     
-    // Authentication check
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userData = verifyToken(token);
-    if (!userData || userData.role !== 'main-admin') {
-      return Response.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-    
     console.log('🗑️ DELETE request for salon ID:', id);
     console.log('🗑️ ID type:', typeof id);
     console.log('🗑️ ID length:', id?.length);
@@ -209,6 +141,11 @@ export async function DELETE(request, { params }) {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB_NAME || 'saloon');
     
+    // First list all salons to verify
+    const allSalons = await db.collection('salons').find({}).toArray();
+    console.log('📊 Total salons in database:', allSalons.length);
+    console.log('🔍 All salon IDs:', allSalons.map(s => s._id.toString()));
+    
     // Check if salon exists
     const salon = await db.collection('salons').findOne({ 
       _id: new ObjectId(id) 
@@ -216,6 +153,24 @@ export async function DELETE(request, { params }) {
 
     if (!salon) {
       console.error('❌ Salon not found with ID:', id);
+      console.error('❌ Searched for ObjectId:', new ObjectId(id));
+      
+      // Try to find if ID exists in any format
+      const salonByString = await db.collection('salons').findOne({ 
+        _id: id 
+      });
+      
+      if (salonByString) {
+        console.log('⚠️ Found salon with string ID (not ObjectId):', salonByString.name);
+        // Handle string ID case
+        const result = await db.collection('salons').deleteOne({ _id: id });
+        return Response.json({ 
+          success: true, 
+          message: 'Salon deleted (string ID)',
+          deletedId: id
+        });
+      }
+      
       return Response.json({ 
         success: false, 
         error: 'Salon not found in database' 
