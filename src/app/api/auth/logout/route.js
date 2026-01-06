@@ -1,19 +1,21 @@
-export async function POST() {
-  const response = Response.json({ 
-    success: true,
-    message: 'Logged out successfully' 
-  });
+import { NextResponse } from 'next/server';
 
-  // Clear both possible cookie names
-  response.headers.append(
-    'Set-Cookie',
-    'auth-token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
-  );
-  
-  response.headers.append(
-    'Set-Cookie',
-    'token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
-  );
+export async function POST(request) {
+  try {
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
 
-  return response;
+    // Clear auth cookie
+    response.cookies.delete('auth-token');
+
+    return response;
+  } catch (error) {
+    console.error('Logout error:', error);
+    return NextResponse.json(
+      { error: 'Failed to logout' },
+      { status: 500 }
+    );
+  }
 }
