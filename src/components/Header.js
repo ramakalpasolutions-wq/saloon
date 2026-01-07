@@ -66,7 +66,7 @@ export default function Header() {
               />
             )}
             {/* Always show site name */}
-            <h1 className="text-2xl font-bold text-black">
+            <h1 className="text-2xl font-bold text-green-600">
               {siteName}
             </h1>
           </div>

@@ -72,7 +72,7 @@ export default function MyCheckinsPage() {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="+91 98765 43210"
                   required
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
                 />
               </div>
               <button

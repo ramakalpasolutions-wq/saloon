@@ -268,7 +268,7 @@ export default function NewSalonPage() {
                   accept="image/*"
                   onChange={handleLogoUpload}
                   disabled={uploadingLogo}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg"
                 />
                 {uploadingLogo && <p className="text-sm text-gray-500 mt-2">Uploading logo...</p>}
               </div>
@@ -283,7 +283,7 @@ export default function NewSalonPage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -296,7 +296,7 @@ export default function NewSalonPage() {
                   value={formData.description}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -311,7 +311,7 @@ export default function NewSalonPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
 
@@ -325,7 +325,7 @@ export default function NewSalonPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -347,7 +347,7 @@ export default function NewSalonPage() {
                   value={formData.address.street}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -413,7 +413,7 @@ export default function NewSalonPage() {
                   onChange={handleChange}
                   required
                   placeholder="https://maps.app.goo.gl/xxxxx or https://www.google.com/maps/@17.385,78.486,15z"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   📱 How to get: Open Google Maps → Search location → Tap Share → Copy link
@@ -474,7 +474,7 @@ export default function NewSalonPage() {
                     value={formData.adminName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
 
@@ -488,7 +488,7 @@ export default function NewSalonPage() {
                     value={formData.adminEmail}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -503,7 +503,7 @@ export default function NewSalonPage() {
                     name="adminPhone"
                     value={formData.adminPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
 
@@ -550,14 +550,14 @@ export default function NewSalonPage() {
                         type="time"
                         value={hours.open}
                         onChange={(e) => updateOpeningHours(index, 'open', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                       <span className="text-gray-500">to</span>
                       <input
                         type="time"
                         value={hours.close}
                         onChange={(e) => updateOpeningHours(index, 'close', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     </>
                   )}
@@ -577,7 +577,7 @@ export default function NewSalonPage() {
                 multiple
                 onChange={handleGalleryUpload}
                 disabled={uploadingGallery}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg"
               />
               {uploadingGallery && <p className="text-sm text-gray-500 mt-2">Uploading images...</p>}
             </div>
@@ -594,7 +594,7 @@ export default function NewSalonPage() {
                     <button
                       type="button"
                       onClick={() => removeGalleryImage(index)}
-                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 bg-red-600 text-black rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

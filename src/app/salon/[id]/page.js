@@ -1,70 +1,121 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Header from '@/components/Header';
 import Link from 'next/link';
+import Header from '@/components/Header';
 
 export default function SalonDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [salon, setSalon] = useState(null);
+  const [services, setServices] = useState([]);
+  const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [checkInData, setCheckInData] = useState({
-    customerName: '',
-    phoneNumber: '',
-    services: [],
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
 
   useEffect(() => {
-    fetchSalon();
+    if (params.id) {
+      fetchSalonDetails();
+    }
   }, [params.id]);
 
-  const fetchSalon = async () => {
+  const fetchSalonDetails = async () => {
     try {
-      const response = await fetch(`/api/salons/${params.id}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setSalon(data.salon);
+      setLoading(true);
+      
+      // Fetch salon details
+      const salonRes = await fetch(`/api/salons/${params.id}`);
+      const salonData = await salonRes.json();
+      
+      if (salonData.success) {
+        setSalon(salonData.salon);
+        
+        // Fetch services for this salon
+        const servicesRes = await fetch(`/api/salons/${params.id}/services`);
+        const servicesData = await servicesRes.json();
+        if (servicesData.success) {
+          setServices(servicesData.services);
+        }
+        
+        // Fetch staff for this salon
+        const staffRes = await fetch(`/api/salons/${params.id}/staff`);
+        const staffData = await staffRes.json();
+        if (staffData.success) {
+          setStaff(staffData.staff);
+        }
       }
     } catch (error) {
-      console.error('Error fetching salon:', error);
+      console.error('Error fetching salon details:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCheckIn = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const toggleService = (serviceId) => {
+    setSelectedServices(prev => 
+      prev.includes(serviceId) 
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const handleCheckIn = async () => {
+    if (!customerName || !customerPhone) {
+      alert('Please enter your name and phone number');
+      return;
+    }
+
+    if (selectedServices.length === 0) {
+      alert('Please select at least one service');
+      return;
+    }
+
+    setCheckingIn(true);
 
     try {
-      const response = await fetch('/api/checkins/create', {
+      const response = await fetch('/api/queue/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...checkInData,
-          salonId: salon._id,
-          salonName: salon.name,
-          salonAddress: salon.address,
+          salonId: params.id,
+          customerName,
+          customerPhone,
+          services: selectedServices,
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        alert('Check-in successful!');
-        router.push(`/track-checkin/${data.checkin._id}`);
+      if (data.success) {
+        alert(`✅ Checked in successfully!\n\nQueue Position: #${data.queueEntry.position}\nEstimated Wait: ${data.queueEntry.estimatedWaitTime} minutes`);
+        router.push(`/queue/${data.queueEntry._id}`);
       } else {
-        alert(data.error || 'Failed to check in');
+        alert('Failed to check in: ' + data.error);
       }
     } catch (error) {
-      console.error('Error checking in:', error);
-      alert('Error creating check-in');
+      console.error('Check-in error:', error);
+      alert('Error during check-in. Please try again.');
     } finally {
-      setSubmitting(false);
+      setCheckingIn(false);
     }
+  };
+
+  const getSelectedServicesTotal = () => {
+    return selectedServices.reduce((total, serviceId) => {
+      const service = services.find(s => s._id === serviceId);
+      return total + (service?.price || 0);
+    }, 0);
+  };
+
+  const getSelectedServicesDuration = () => {
+    return selectedServices.reduce((total, serviceId) => {
+      const service = services.find(s => s._id === serviceId);
+      return total + (service?.duration || 0);
+    }, 0);
   };
 
   if (loading) {
@@ -72,7 +123,10 @@ export default function SalonDetailPage() {
       <>
         <Header />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading salon details...</p>
+          </div>
         </div>
       </>
     );
@@ -84,11 +138,9 @@ export default function SalonDetailPage() {
         <Header />
         <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-20">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon Not Found</h2>
-            <Link href="/map">
-              <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold">
-                Browse All Salons
-              </button>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Salon not found</h2>
+            <Link href="/find-salon" className="text-green-600 hover:text-green-700 font-semibold">
+              ← Back to Find Salon
             </Link>
           </div>
         </div>
@@ -99,124 +151,252 @@ export default function SalonDetailPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 pt-20 pb-12">
-        <div className="max-w-5xl mx-auto px-4">
-          <Link href="/map">
-            <button className="mb-6 text-green-600 hover:text-green-700 font-semibold flex items-center gap-2">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to All Salons
-            </button>
-          </Link>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Salon Info */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">{salon.name}</h1>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <svg className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  </svg>
-                  <div>
-                    <p className="font-semibold text-gray-900">Address</p>
-                    <p className="text-gray-600">{salon.address}, {salon.city}</p>
-                  </div>
-                </div>
-
-                {salon.phone && (
-                  <div className="flex items-center gap-3">
-                    <svg className="h-6 w-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <div>
-                      <p className="font-semibold text-gray-900">Phone</p>
-                      <p className="text-gray-600">{salon.phone}</p>
-                    </div>
+      <div className="pt-16 min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <div className="relative h-80 bg-gradient-to-r from-green-600 to-blue-600">
+          {salon.logo?.url ? (
+            <div className="absolute inset-0">
+              <img src={salon.logo.url} alt={salon.name} className="w-full h-full object-cover opacity-20" />
+            </div>
+          ) : null}
+          
+          <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
+            <div>
+              {salon.logo?.url && (
+                <img src={salon.logo.url} alt={salon.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-xl" />
+              )}
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{salon.name}</h1>
+              {salon.address?.fullAddress && (
+                <p className="text-white text-lg mb-4">📍 {salon.address.fullAddress}</p>
+              )}
+              <div className="flex items-center justify-center gap-4">
+                {salon.rating > 0 && (
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <span className="text-yellow-300 text-xl">⭐</span>
+                    <span className="text-white font-bold">{salon.rating.toFixed(1)}</span>
+                    <span className="text-white/80">({salon.totalReviews} reviews)</span>
                   </div>
                 )}
-
-                {salon.services && salon.services.length > 0 && (
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-2">Available Services:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {salon.services.map((service, idx) => (
-                        <span key={idx} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                          {service}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                {salon.phone && (
+                  <a href={`tel:${salon.phone}`} className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full font-semibold hover:bg-white/30 transition-all">
+                    📞 Call Now
+                  </a>
                 )}
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Check-in Form */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Check In Now</h2>
-
-              <form onSubmit={handleCheckIn} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name *</label>
-                  <input
-                    type="text"
-                    value={checkInData.customerName}
-                    onChange={(e) => setCheckInData({ ...checkInData, customerName: e.target.value })}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="John Doe"
-                  />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Services Section */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">✂️ Select Services</h2>
+                  <span className="text-sm text-gray-600">{services.length} services available</span>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
-                  <input
-                    type="tel"
-                    value={checkInData.phoneNumber}
-                    onChange={(e) => setCheckInData({ ...checkInData, phoneNumber: e.target.value })}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
+                {services.length > 0 ? (
+                  <div className="space-y-4">
+                    {services.map((service) => (
+                      <div
+                        key={service._id}
+                        onClick={() => toggleService(service._id)}
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedServices.includes(service._id)
+                            ? 'border-green-600 bg-green-50'
+                            : 'border-gray-200 hover:border-green-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedServices.includes(service._id)}
+                                onChange={() => {}}
+                                className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                              />
+                              <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
+                            </div>
+                            {service.description && (
+                              <p className="text-sm text-gray-600 mb-3 ml-8">{service.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 ml-8">
+                              <span className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                                ₹{service.price}
+                              </span>
+                              <span className="text-sm text-gray-600">
+                                ⏱️ {service.duration} min
+                              </span>
+                              {service.category && (
+                                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                  {service.category}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-5xl mb-4">✂️</div>
+                    <p className="text-gray-600">No services available yet</p>
+                    <p className="text-sm text-gray-500 mt-2">This salon hasn't added services</p>
+                  </div>
+                )}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Select Services (Optional)</label>
-                  {salon.services && salon.services.map((service, idx) => (
-                    <label key={idx} className="flex items-center gap-2 mb-2">
-                      <input
-                        type="checkbox"
-                        value={service}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setCheckInData({
-                              ...checkInData,
-                              services: [...checkInData.services, service]
-                            });
-                          } else {
-                            setCheckInData({
-                              ...checkInData,
-                              services: checkInData.services.filter(s => s !== service)
-                            });
-                          }
-                        }}
-                        className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                      />
-                      <span className="text-gray-700">{service}</span>
-                    </label>
-                  ))}
+              {/* Staff Section */}
+              {staff.length > 0 && (
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">👨‍💼 Our Staff</h2>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {staff.map((member) => (
+                      <div key={member._id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                        {member.photo?.url ? (
+                          <img src={member.photo.url} alt={member.name} className="w-16 h-16 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold text-xl">
+                            {member.name.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-gray-900">{member.name}</h3>
+                          {member.specialization && (
+                            <p className="text-sm text-gray-600">{member.specialization}</p>
+                          )}
+                          {member.experience && (
+                            <p className="text-xs text-gray-500">{member.experience} years exp</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-semibold transition-colors disabled:bg-gray-400 text-lg"
-                >
-                  {submitting ? 'Checking In...' : 'Complete Check-In'}
-                </button>
-              </form>
+              {/* About Section */}
+              {salon.description && (
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">ℹ️ About</h2>
+                  <p className="text-gray-700 leading-relaxed">{salon.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar - Check-in Card */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-20">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">📋 Check-In Details</h3>
+
+                {selectedServices.length > 0 ? (
+                  <div className="space-y-4 mb-6">
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Selected Services</h4>
+                      <ul className="space-y-2">
+                        {selectedServices.map(serviceId => {
+                          const service = services.find(s => s._id === serviceId);
+                          return service ? (
+                            <li key={service._id} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">{service.name}</span>
+                              <span className="font-semibold text-green-600">₹{service.price}</span>
+                            </li>
+                          ) : null;
+                        })}
+                      </ul>
+                      <div className="border-t border-green-200 mt-3 pt-3 flex items-center justify-between">
+                        <span className="font-bold text-gray-900">Total</span>
+                        <span className="font-bold text-green-600 text-lg">₹{getSelectedServicesTotal()}</span>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-2">
+                        ⏱️ Estimated time: {getSelectedServicesDuration()} minutes
+                      </div>
+                    </div>
+
+                    {/* Customer Info Form */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          placeholder="Enter your name"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                        <input
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          placeholder="+91 1234567890"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleCheckIn}
+                      disabled={checkingIn || !customerName || !customerPhone}
+                      className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
+                        checkingIn || !customerName || !customerPhone
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:shadow-xl'
+                      }`}
+                    >
+                      {checkingIn ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Checking In...
+                        </span>
+                      ) : (
+                        '✅ Check In Now'
+                      )}
+                    </button>
+
+                    <p className="text-xs text-gray-500 text-center">
+                      You'll receive your queue position after check-in
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-5xl mb-3">✂️</div>
+                    <p className="text-gray-600 font-medium">Select services to check in</p>
+                    <p className="text-sm text-gray-500 mt-2">Choose at least one service to continue</p>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="mt-6 pt-6 border-t space-y-3">
+                  {salon.googleMapsLink && (
+                    <a
+                      href={salon.googleMapsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full py-2 px-4 bg-blue-100 text-blue-700 rounded-lg text-center font-semibold hover:bg-blue-200 transition-all"
+                    >
+                      🗺️ Get Directions
+                    </a>
+                  )}
+                  <Link
+                    href="/find-salon"
+                    className="block w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg text-center font-semibold hover:bg-gray-200 transition-all"
+                  >
+                    ← Back to Salons
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -272,7 +272,7 @@ export default function SiteSettingsPage() {
                   type="text"
                   value={settings.siteName || ''}
                   onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
                   placeholder="Green Saloon"
                 />
               </div>
@@ -288,15 +288,13 @@ export default function SiteSettingsPage() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleImageUpload(e.target.files[0], null, 'logo')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                  className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
                 />
                 <p className="text-sm text-gray-500 mt-2">Recommended: PNG with transparent background, 200x200px</p>
                 <p className="text-xs text-orange-600 mt-1">✨ Images auto-save after upload!</p>
               </div>
             </div>
           )}
-
-          {/* Add other tabs similarly - I'll show the pattern for HERO and NEWS */}
 
           {/* HERO TAB */}
           {activeTab === 'hero' && (
@@ -318,7 +316,46 @@ export default function SiteSettingsPage() {
                     ...settings,
                     heroSection: { ...settings.heroSection, title: e.target.value }
                   })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Subtitle</label>
+                <input
+                  type="text"
+                  value={settings.heroSection?.subtitle || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    heroSection: { ...settings.heroSection, subtitle: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={settings.heroSection?.description || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    heroSection: { ...settings.heroSection, description: e.target.value }
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">CTA Button Text</label>
+                <input
+                  type="text"
+                  value={settings.heroSection?.ctaButtonText || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    heroSection: { ...settings.heroSection, ctaButtonText: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
@@ -331,8 +368,402 @@ export default function SiteSettingsPage() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleImageUpload(e.target.files[0], 'heroSection', 'backgroundImage')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                  className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
                 />
+                <p className="text-xs text-orange-600 mt-2">✨ Images auto-save after upload!</p>
+              </div>
+            </div>
+          )}
+
+          {/* APP SHOWCASE TAB */}
+          {activeTab === 'app' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <span className="text-4xl">📱</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">App Showcase Section</h2>
+                  <p className="text-sm text-gray-600">Mobile app promotion section</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={settings.appShowcaseSection?.title || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    appShowcaseSection: { ...settings.appShowcaseSection, title: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={settings.appShowcaseSection?.description || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    appShowcaseSection: { ...settings.appShowcaseSection, description: e.target.value }
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Button Text</label>
+                <input
+                  type="text"
+                  value={settings.appShowcaseSection?.buttonText || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    appShowcaseSection: { ...settings.appShowcaseSection, buttonText: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Showcase Image</label>
+                {settings.appShowcaseSection?.image?.url && (
+                  <img src={settings.appShowcaseSection.image.url} alt="App Showcase" className="w-full h-64 object-cover mb-3 rounded-lg border-2 border-gray-200" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files[0], 'appShowcaseSection', 'image')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 text-black file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                />
+                <p className="text-xs text-orange-600 mt-2">✨ Images auto-save after upload!</p>
+              </div>
+            </div>
+          )}
+
+          {/* QUICK CHECK-IN TAB */}
+          {activeTab === 'checkin' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <span className="text-4xl">✅</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Quick Check-in Section</h2>
+                  <p className="text-sm text-gray-600">Email signup section</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={settings.quickCheckinSection?.title || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    quickCheckinSection: { ...settings.quickCheckinSection, title: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={settings.quickCheckinSection?.description || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    quickCheckinSection: { ...settings.quickCheckinSection, description: e.target.value }
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.quickCheckinSection?.showEmailSignup !== false}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      quickCheckinSection: { ...settings.quickCheckinSection, showEmailSignup: e.target.checked }
+                    })}
+                    className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-semibold text-gray-700">Show Email Signup Form</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Background Image</label>
+                {settings.quickCheckinSection?.backgroundImage?.url && (
+                  <img src={settings.quickCheckinSection.backgroundImage.url} alt="Quick Check-in" className="w-full h-64 object-cover mb-3 rounded-lg border-2 border-gray-200" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files[0], 'quickCheckinSection', 'backgroundImage')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                />
+                <p className="text-xs text-orange-600 mt-2">✨ Images auto-save after upload!</p>
+              </div>
+            </div>
+          )}
+
+          {/* HAIRCUTS TAB */}
+          {activeTab === 'haircuts' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <span className="text-4xl">✂️</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Haircuts Section</h2>
+                  <p className="text-sm text-gray-600">Categories for different customers</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Section Title</label>
+                <input
+                  type="text"
+                  value={settings.haircutsSection?.title || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    haircutsSection: { ...settings.haircutsSection, title: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Subtitle</label>
+                <input
+                  type="text"
+                  value={settings.haircutsSection?.subtitle || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    haircutsSection: { ...settings.haircutsSection, subtitle: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div className="space-y-6">
+                <h3 className="font-semibold text-lg text-gray-900">Categories</h3>
+                {settings.haircutsSection?.categories?.map((category, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                    <h4 className="font-semibold text-gray-900 mb-4">Category {index + 1}: {category.title}</h4>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={category.title || ''}
+                          onChange={(e) => {
+                            const newCategories = [...settings.haircutsSection.categories];
+                            newCategories[index] = { ...newCategories[index], title: e.target.value };
+                            setSettings({
+                              ...settings,
+                              haircutsSection: { ...settings.haircutsSection, categories: newCategories }
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                        <input
+                          type="text"
+                          value={category.label || ''}
+                          onChange={(e) => {
+                            const newCategories = [...settings.haircutsSection.categories];
+                            newCategories[index] = { ...newCategories[index], label: e.target.value };
+                            setSettings({
+                              ...settings,
+                              haircutsSection: { ...settings.haircutsSection, categories: newCategories }
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+                        <input
+                          type="text"
+                          value={category.buttonText || ''}
+                          onChange={(e) => {
+                            const newCategories = [...settings.haircutsSection.categories];
+                            newCategories[index] = { ...newCategories[index], buttonText: e.target.value };
+                            setSettings({
+                              ...settings,
+                              haircutsSection: { ...settings.haircutsSection, categories: newCategories }
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                        {category.image?.url && (
+                          <img src={category.image.url} alt={category.title} className="w-full h-32 object-cover mb-2 rounded-lg" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e.target.files[0], 'haircutsSection', 'image', index)}
+                          className="w-full text-sm file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-green-50 file:text-green-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SERVICES TAB */}
+          {activeTab === 'services' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <span className="text-4xl">💇</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Services Section</h2>
+                  <p className="text-sm text-gray-600">Additional haircare services</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Label</label>
+                <input
+                  type="text"
+                  value={settings.servicesSection?.label || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    servicesSection: { ...settings.servicesSection, label: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={settings.servicesSection?.title || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    servicesSection: { ...settings.servicesSection, title: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={settings.servicesSection?.description || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    servicesSection: { ...settings.servicesSection, description: e.target.value }
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Button Text</label>
+                <input
+                  type="text"
+                  value={settings.servicesSection?.buttonText || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    servicesSection: { ...settings.servicesSection, buttonText: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Background Image</label>
+                {settings.servicesSection?.backgroundImage?.url && (
+                  <img src={settings.servicesSection.backgroundImage.url} alt="Services" className="w-full h-64 object-cover mb-3 rounded-lg border-2 border-gray-200" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files[0], 'servicesSection', 'backgroundImage')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                />
+                <p className="text-xs text-orange-600 mt-2">✨ Images auto-save after upload!</p>
+              </div>
+            </div>
+          )}
+
+          {/* SCHEDULE TAB */}
+          {activeTab === 'schedule' && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <span className="text-4xl">📅</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Schedule Section</h2>
+                  <p className="text-sm text-gray-600">Call-to-action for finding salons</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={settings.scheduleSection?.title || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    scheduleSection: { ...settings.scheduleSection, title: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={settings.scheduleSection?.description || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    scheduleSection: { ...settings.scheduleSection, description: e.target.value }
+                  })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Button Text</label>
+                <input
+                  type="text"
+                  value={settings.scheduleSection?.buttonText || ''}
+                  onChange={(e) => setSettings({
+                    ...settings,
+                    scheduleSection: { ...settings.scheduleSection, buttonText: e.target.value }
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Background Image</label>
+                {settings.scheduleSection?.backgroundImage?.url && (
+                  <img src={settings.scheduleSection.backgroundImage.url} alt="Schedule" className="w-full h-64 object-cover mb-3 rounded-lg border-2 border-gray-200" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files[0], 'scheduleSection', 'backgroundImage')}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 text-black file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                />
+                <p className="text-xs text-orange-600 mt-2">✨ Images auto-save after upload!</p>
               </div>
             </div>
           )}
@@ -365,7 +796,7 @@ export default function SiteSettingsPage() {
                     ...settings,
                     newsSection: { ...settings.newsSection, title: e.target.value }
                   })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
@@ -396,7 +827,7 @@ export default function SiteSettingsPage() {
                               newsSection: { ...settings.newsSection, articles: newArticles }
                             });
                           }}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg"
                         />
                       </div>
                       <div>
@@ -412,7 +843,23 @@ export default function SiteSettingsPage() {
                             });
                           }}
                           rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+                        <input
+                          type="text"
+                          value={article.buttonText || ''}
+                          onChange={(e) => {
+                            const newArticles = [...settings.newsSection.articles];
+                            newArticles[index] = { ...newArticles[index], buttonText: e.target.value };
+                            setSettings({
+                              ...settings,
+                              newsSection: { ...settings.newsSection, articles: newArticles }
+                            });
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 text-gray-900 rounded-lg"
                         />
                       </div>
                     </div>
@@ -421,8 +868,6 @@ export default function SiteSettingsPage() {
               </div>
             </div>
           )}
-
-          {/* Add remaining tabs: app, checkin, haircuts, services, schedule following the same pattern */}
 
         </div>
       </div>

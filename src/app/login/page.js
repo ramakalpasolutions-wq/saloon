@@ -78,7 +78,7 @@ function LoginForm() {
               Green Saloon
             </h1>
           </Link>
-          <p className="text-gray-600">Welcome back! Please sign in</p>
+          <p className="text-black">Welcome back! Please sign in</p>
         </div>
 
         {/* Login Form */}
@@ -86,7 +86,7 @@ function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-black mb-2">
                 Email Address
               </label>
               <input
@@ -95,7 +95,7 @@ function LoginForm() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 placeholder="john@example.com"
                 autoComplete="email"
               />
@@ -112,7 +112,7 @@ function LoginForm() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 text-black focus:ring-green-500 focus:border-transparent"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
@@ -147,9 +147,9 @@ function LoginForm() {
 
           {/* Test Credentials */}
           <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs text-gray-600 font-semibold mb-1">Admin Login:</p>
-            <p className="text-xs text-gray-500">Email: admin@greensaloon.com</p>
-            <p className="text-xs text-gray-500">Password: admin123</p>
+            <p className="text-xs text-black font-semibold mb-1">Admin Login:</p>
+            <p className="text-xs text-black">Email: admin@greensaloon.com</p>
+            <p className="text-xs text-black">Password: admin123</p>
           </div>
         </div>
 
