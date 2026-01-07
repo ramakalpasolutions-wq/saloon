@@ -30,14 +30,15 @@ export default function AllSalonsPage() {
     setLoading(true);
     try {
       console.log('🔄 Fetching salons...');
-      
+
+      // ✅ CHANGE THIS LINE - Use admin API instead
       const response = await fetch('/api/admin/salons');
       console.log('📡 Response status:', response.status);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('❌ API Error:', errorData);
-        
+
         if (response.status === 401) {
           toast.error('Unauthorized. Please login as main admin.');
         } else {
@@ -51,9 +52,13 @@ export default function AllSalonsPage() {
       const data = await response.json();
       console.log('✅ Response data:', data);
       console.log('📊 Total salons:', data.total);
-      
+
       if (data.salons && Array.isArray(data.salons)) {
         console.log('✅ Setting salons:', data.salons.length);
+        // Log status of each salon
+        data.salons.forEach(s => {
+          console.log(`  - ${s.name}: ${s.status}`);
+        });
         setSalons(data.salons);
       } else {
         console.log('⚠️ No salons array in response');
@@ -68,6 +73,7 @@ export default function AllSalonsPage() {
       console.log('✅ Loading complete');
     }
   };
+
 
   const applyFilters = () => {
     let filtered = [...salons];
@@ -230,21 +236,19 @@ export default function AllSalonsPage() {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'list'
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === 'list'
                     ? 'bg-white text-green-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 📋 List
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === 'map'
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === 'map'
                     ? 'bg-white text-green-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                }`}
+                  }`}
               >
                 🗺️ Map
               </button>
@@ -257,51 +261,46 @@ export default function AllSalonsPage() {
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                statusFilter === 'all'
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'all'
                   ? 'bg-green-600 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               All ({getStatusCount('all')})
             </button>
             <button
               onClick={() => setStatusFilter('approved')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                statusFilter === 'approved'
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'approved'
                   ? 'bg-green-600 text-white shadow-md'
                   : 'bg-green-50 text-green-700 hover:bg-green-100'
-              }`}
+                }`}
             >
               ✅ Approved ({getStatusCount('approved')})
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                statusFilter === 'pending'
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'pending'
                   ? 'bg-yellow-600 text-white shadow-md'
                   : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-              }`}
+                }`}
             >
               ⏳ Pending ({getStatusCount('pending')})
             </button>
             <button
               onClick={() => setStatusFilter('suspended')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                statusFilter === 'suspended'
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'suspended'
                   ? 'bg-gray-600 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               ⏸️ Suspended ({getStatusCount('suspended')})
             </button>
             <button
               onClick={() => setStatusFilter('rejected')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${
-                statusFilter === 'rejected'
+              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'rejected'
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-red-50 text-red-700 hover:bg-red-100'
-              }`}
+                }`}
             >
               ❌ Rejected ({getStatusCount('rejected')})
             </button>
@@ -344,11 +343,11 @@ export default function AllSalonsPage() {
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <div className="text-6xl mb-4">🏪</div>
             <p className="text-gray-500 text-lg mb-4">
-              {searchQuery 
+              {searchQuery
                 ? `No salons found matching "${searchQuery}"`
                 : statusFilter !== 'all'
-                ? `No ${statusFilter} salons found`
-                : 'No salons registered yet'}
+                  ? `No ${statusFilter} salons found`
+                  : 'No salons registered yet'}
             </p>
             <div className="flex gap-3 justify-center">
               {searchQuery && (
@@ -456,7 +455,7 @@ export default function AllSalonsPage() {
                         <div>
                           <p className="text-gray-500 font-medium mb-1">📊 Stats</p>
                           <p className="text-gray-700">
-                            👥 {salon.staff?.length || 0} Staff • 
+                            👥 {salon.staff?.length || 0} Staff •
                             ✂️ {salon.services?.length || 0} Services
                           </p>
                         </div>
@@ -504,10 +503,10 @@ export default function AllSalonsPage() {
               </h3>
               <p className="text-sm text-gray-600">Click on any marker to view salon details</p>
             </div>
-            
+
             <div className="h-[600px] rounded-lg overflow-hidden border-2 border-gray-200">
-              <MapView 
-                salons={filteredSalons} 
+              <MapView
+                salons={filteredSalons}
                 center={[20.5937, 78.9629]}
                 zoom={5}
               />

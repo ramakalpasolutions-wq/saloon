@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,7 +26,8 @@ export default function NewSalonPage() {
       state: '',
       zipCode: '',
     },
-    coordinates: [78.4867, 17.385], // Default: Hyderabad [longitude, latitude]
+    googleMapsLink: '', // Primary location source
+    coordinates: [78.4867, 17.385], // Extracted from Google Maps link
     adminName: '',
     adminEmail: '',
     adminPhone: '',
@@ -43,6 +44,38 @@ export default function NewSalonPage() {
     logo: null,
     images: [],
   });
+
+  // Extract coordinates when Google Maps link changes
+  useEffect(() => {
+    const extractAndSetCoordinates = async () => {
+      if (formData.googleMapsLink) {
+        try {
+          const { extractCoordinatesFromGoogleMaps } = await import('@/lib/extractCoordinates');
+          const coords = await extractCoordinatesFromGoogleMaps(formData.googleMapsLink);
+          
+          if (coords) {
+            setFormData(prev => ({
+              ...prev,
+              coordinates: coords,
+            }));
+            toast.success('✅ Location extracted from Google Maps link!');
+          } else {
+            toast.warning('⚠️ Could not extract coordinates. Please check your Google Maps link.');
+          }
+        } catch (error) {
+          console.error('Error extracting coordinates:', error);
+          toast.error('Error extracting coordinates');
+        }
+      }
+    };
+
+    // Debounce the extraction
+    const timer = setTimeout(() => {
+      extractAndSetCoordinates();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData.googleMapsLink]);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
@@ -154,14 +187,6 @@ export default function NewSalonPage() {
     }
   };
 
-  const handleMapClick = (lat, lng) => {
-    setFormData(prev => ({
-      ...prev,
-      coordinates: [lng, lat] // [longitude, latitude]
-    }));
-    toast.success('Location updated on map');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -181,6 +206,7 @@ export default function NewSalonPage() {
             ...formData.address,
             fullAddress,
           },
+          googleMapsLink: formData.googleMapsLink,
           coordinates: formData.coordinates,
           openingHours: formData.openingHours,
           logo: formData.logo,
@@ -371,59 +397,65 @@ export default function NewSalonPage() {
             </div>
           </div>
 
-          {/* MAP LOCATION */}
+          {/* GOOGLE MAPS LINK - Replaces MAP LOCATION section */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Set Map Location</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Location</h2>
             
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Click on the map to set the exact location of the salon
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Latitude
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.coordinates[1]?.toFixed(6) || '0.000000'}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Longitude
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.coordinates[0]?.toFixed(6) || '0.000000'}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                  />
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Google Maps Link *
+                </label>
+                <input
+                  type="url"
+                  name="googleMapsLink"
+                  value={formData.googleMapsLink}
+                  onChange={handleChange}
+                  required
+                  placeholder="https://maps.app.goo.gl/xxxxx or https://www.google.com/maps/@17.385,78.486,15z"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  📱 How to get: Open Google Maps → Search location → Tap Share → Copy link
+                </p>
               </div>
-            </div>
 
-            <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
-              <MapView
-                salons={[{
-                  _id: 'new',
-                  name: formData.name || 'New Salon',
-                  address: formData.address,
-                  coordinates: formData.coordinates,
-                  phone: formData.phone,
-                  logo: formData.logo,
-                }]}
-                center={[formData.coordinates[1], formData.coordinates[0]]}
-                zoom={15}
-                onMapClick={handleMapClick}
-              />
+              {formData.googleMapsLink && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-blue-900 mb-2">✅ Supported Link Formats:</p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>• https://maps.app.goo.gl/xxxxx (Shortened link)</li>
+                    <li>• https://www.google.com/maps/@17.385,78.486,15z</li>
+                    <li>• https://www.google.com/maps/place/Name/@17.385,78.486</li>
+                    <li>• https://maps.google.com/?q=17.385,78.486</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Preview map if coordinates can be extracted */}
+              {formData.googleMapsLink && formData.coordinates && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
+                  <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <MapView
+                      salons={[{
+                        _id: 'new',
+                        name: formData.name || 'New Salon',
+                        address: formData.address,
+                        coordinates: formData.coordinates,
+                        phone: formData.phone,
+                        logo: formData.logo,
+                      }]}
+                      center={[formData.coordinates[1], formData.coordinates[0]]}
+                      zoom={15}
+                    />
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">
+                    ✅ Coordinates extracted: {formData.coordinates[1].toFixed(6)}, {formData.coordinates[0].toFixed(6)}
+                  </p>
+                </div>
+              )}
             </div>
-            
-            <p className="text-xs text-blue-600 mt-2">
-              💡 Tip: Click anywhere on the map to set the salon's location. You can zoom in/out for precision.
-            </p>
           </div>
 
           {/* Admin Account */}

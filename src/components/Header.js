@@ -80,7 +80,9 @@ export default function Header() {
               My Check-ins
             </button>
           </Link>
-          <Link href="/map">
+          
+          {/* ✅ UPDATED: Changed href="/map" to href="/find-salon" */}
+          <Link href="/find-salon">
             <button className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />

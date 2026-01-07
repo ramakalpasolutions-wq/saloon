@@ -8,7 +8,6 @@ import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/ConfirmModal';
 import dynamic from 'next/dynamic';
 
-// Import Map component dynamically to avoid SSR issues
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function SalonDetailsPage({ params }) {
@@ -34,6 +33,7 @@ export default function SalonDetailsPage({ params }) {
       state: '',
       zipCode: '',
     },
+    googleMapsLink: '',
     coordinates: [78.4867, 17.385],
     openingHours: [],
     logo: null,
@@ -46,6 +46,40 @@ export default function SalonDetailsPage({ params }) {
   useEffect(() => {
     fetchSalonDetails();
   }, [resolvedParams.id]);
+
+  // Extract coordinates when Google Maps link changes (only in edit mode)
+  useEffect(() => {
+    if (!editing) return;
+
+    const extractAndSetCoordinates = async () => {
+      if (formData.googleMapsLink) {
+        try {
+          const { extractCoordinatesFromGoogleMaps } = await import('@/lib/extractCoordinates');
+          const coords = await extractCoordinatesFromGoogleMaps(formData.googleMapsLink);
+          
+          if (coords) {
+            setFormData(prev => ({
+              ...prev,
+              coordinates: coords,
+            }));
+            toast.success('✅ Location extracted from Google Maps link!');
+          } else {
+            toast.warning('⚠️ Could not extract coordinates. Please check your Google Maps link.');
+          }
+        } catch (error) {
+          console.error('Error extracting coordinates:', error);
+          toast.error('Error extracting coordinates');
+        }
+      }
+    };
+
+    // Debounce the extraction
+    const timer = setTimeout(() => {
+      extractAndSetCoordinates();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData.googleMapsLink, editing]);
 
   const fetchSalonDetails = async () => {
     try {
@@ -60,6 +94,7 @@ export default function SalonDetailsPage({ params }) {
           phone: data.salon.phone || '',
           email: data.salon.email || '',
           address: data.salon.address || { street: '', city: '', state: '', zipCode: '' },
+          googleMapsLink: data.salon.googleMapsLink || '',
           coordinates: data.salon.coordinates || [78.4867, 17.385],
           openingHours: data.salon.openingHours || weekDays.map(day => ({
             day,
@@ -197,16 +232,6 @@ export default function SalonDetailsPage({ params }) {
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleMapClick = (lat, lng) => {
-    if (editing) {
-      setFormData(prev => ({
-        ...prev,
-        coordinates: [lng, lat] // Note: [longitude, latitude] format
-      }));
-      toast.success('Location updated on map');
     }
   };
 
@@ -594,63 +619,69 @@ export default function SalonDetailsPage({ params }) {
             </div>
           </div>
 
-          {/* MAP LOCATION */}
+          {/* GOOGLE MAPS LINK - Replaces MAP LOCATION section */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Map Location</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Location</h2>
             
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                {editing 
-                  ? 'Click on the map to set the exact location of the salon'
-                  : 'Current location of the salon'}
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Latitude
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.coordinates[1]?.toFixed(6) || '0.000000'}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Longitude
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.coordinates[0]?.toFixed(6) || '0.000000'}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                  />
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Google Maps Link *
+                </label>
+                <input
+                  type="url"
+                  name="googleMapsLink"
+                  value={formData.googleMapsLink}
+                  onChange={handleChange}
+                  disabled={!editing}
+                  required
+                  placeholder="https://maps.app.goo.gl/xxxxx or https://www.google.com/maps/@17.385,78.486,15z"
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
+                  }`}
+                />
+                {!editing && formData.googleMapsLink && (
+                  <a
+                    href={formData.googleMapsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-2 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <span>📍 Open in Google Maps</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  📱 How to get: Open Google Maps → Search location → Tap Share → Copy link
+                </p>
               </div>
-            </div>
 
-            <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
-              <MapView
-                salons={[{
-                  _id: salon._id,
-                  name: formData.name,
-                  address: formData.address,
-                  coordinates: formData.coordinates,
-                  phone: formData.phone,
-                  logo: formData.logo,
-                }]}
-                center={[formData.coordinates[1], formData.coordinates[0]]}
-                zoom={15}
-                onMapClick={editing ? handleMapClick : null}
-              />
+              {/* Preview map */}
+              {formData.googleMapsLink && formData.coordinates && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
+                  <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
+                    <MapView
+                      salons={[{
+                        _id: salon._id,
+                        name: formData.name,
+                        address: formData.address,
+                        coordinates: formData.coordinates,
+                        phone: formData.phone,
+                        logo: formData.logo,
+                      }]}
+                      center={[formData.coordinates[1], formData.coordinates[0]]}
+                      zoom={15}
+                    />
+                  </div>
+                  <p className="text-xs text-green-600 mt-2">
+                    ✅ Coordinates: {formData.coordinates[1].toFixed(6)}, {formData.coordinates[0].toFixed(6)}
+                  </p>
+                </div>
+              )}
             </div>
-            
-            {editing && (
-              <p className="text-xs text-blue-600 mt-2">
-                💡 Tip: Click anywhere on the map to update the salon's location
-              </p>
-            )}
           </div>
 
           {/* Admin Information */}

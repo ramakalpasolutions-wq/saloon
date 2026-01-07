@@ -18,16 +18,36 @@ export default function PendingSalonsPage() {
   const fetchPendingSalons = async () => {
     setLoading(true);
     try {
+      console.log('🔄 Fetching all salons for pending filter...');
+      
       const response = await fetch('/api/admin/salons');
       const data = await response.json();
       
+      console.log('📊 Total salons received:', data.salons?.length || 0);
+      
       if (data.salons) {
+        // Log all salon statuses
+        console.log('📋 All salon statuses:', data.salons.map(s => ({
+          name: s.name,
+          status: s.status,
+          id: s._id
+        })));
+        
         // Filter only pending salons
         const pending = data.salons.filter(salon => salon.status === 'pending');
+        console.log('⏳ Pending salons found:', pending.length);
+        
+        if (pending.length > 0) {
+          console.log('📝 Pending salons:', pending.map(s => s.name));
+        }
+        
         setSalons(pending);
+      } else {
+        console.log('⚠️ No salons in response');
+        setSalons([]);
       }
     } catch (error) {
-      console.error('Failed to fetch salons:', error);
+      console.error('❌ Failed to fetch salons:', error);
       toast.error('Failed to load pending salons');
     } finally {
       setLoading(false);
@@ -48,20 +68,28 @@ export default function PendingSalonsPage() {
     if (!confirmed) return;
 
     try {
+      console.log('🔄 Changing status:', { salonId, newStatus, salonName });
+      
       const response = await fetch(`/api/salons/${salonId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
 
+      console.log('📡 Status change response:', response.status);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Status change result:', result);
         toast.success(`Salon ${action}d successfully`);
         fetchPendingSalons(); // Refresh list
       } else {
+        const errorData = await response.json();
+        console.error('❌ Status change failed:', errorData);
         toast.error(`Failed to ${action} salon`);
       }
     } catch (error) {
-      console.error(`Error ${action}ing salon:`, error);
+      console.error(`❌ Error ${action}ing salon:`, error);
       toast.error(`Error ${action}ing salon`);
     }
   };
@@ -71,6 +99,7 @@ export default function PendingSalonsPage() {
       <AdminLayout requiredRole="main-admin">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <p className="ml-4 text-gray-600">Loading pending salons...</p>
         </div>
       </AdminLayout>
     );

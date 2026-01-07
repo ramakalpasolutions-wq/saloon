@@ -49,7 +49,7 @@ function extractCoordinatesFromGoogleMapsLink(link) {
 export async function POST(request) {
   try {
     const user = getUserFromRequest(request);
-    
+
     if (!user || user.role !== 'main-admin') {
       return NextResponse.json(
         { error: 'Unauthorized - Main admin access required' },
@@ -87,7 +87,7 @@ export async function POST(request) {
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      
+
       try {
         if (!row['Salon Name'] || !row['Phone'] || !row['Email']) {
           throw new Error('Missing required fields: Salon Name, Phone, or Email');
@@ -116,7 +116,7 @@ export async function POST(request) {
         };
 
         let coordinates = [78.4867, 17.385];
-        
+
         if (row['Google Maps Link']) {
           const extractedCoords = extractCoordinatesFromGoogleMapsLink(row['Google Maps Link']);
           if (extractedCoords) {
@@ -146,6 +146,7 @@ export async function POST(request) {
           email: row['Email'],
           address: address,
           coordinates: coordinates,
+          googleMapsLink: row['Google Maps Link'] || '', // ✅ Make sure this line exists
           adminId: admin._id,
           status: 'approved',
           openingHours: [

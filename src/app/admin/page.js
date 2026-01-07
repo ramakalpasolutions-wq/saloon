@@ -18,10 +18,13 @@ export default function MainAdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      // Fetch salon stats
-      const salonsRes = await fetch('/api/salons');
+      // ✅ CHANGE THIS LINE - Use admin API
+      const salonsRes = await fetch('/api/admin/salons');
       const salonsData = await salonsRes.json();
-      
+
+      console.log('📊 Dashboard - Fetching stats');
+      console.log('📊 Total salons:', salonsData.salons?.length || 0);
+
       const totalSalons = salonsData.salons?.length || 0;
       const pendingSalons = salonsData.salons?.filter(s => s.status === 'pending').length || 0;
       const activeSalons = salonsData.salons?.filter(s => s.status === 'approved').length || 0;
@@ -37,12 +40,20 @@ export default function MainAdminDashboard() {
         activeSalons,
         totalBookings,
       });
+
+      console.log('✅ Dashboard stats updated:', {
+        totalSalons,
+        pendingSalons,
+        activeSalons,
+        totalBookings
+      });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
       setLoading(false);
     }
   };
+
 
   const statCards = [
     {

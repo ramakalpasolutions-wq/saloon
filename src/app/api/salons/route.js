@@ -1,59 +1,11 @@
-import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Salon from '@/models/Salon';
 import User from '@/models/User';
-import { hashPassword } from '@/lib/auth';
-import { getUserFromRequest } from '@/lib/auth'; // ✅ Use your existing auth
-
-export async function GET(request) {
-  try {
-    await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const lat = parseFloat(searchParams.get('lat'));
-    const lng = parseFloat(searchParams.get('lng'));
-    const radius = parseFloat(searchParams.get('radius')) || 10;
-
-    let query = { status: 'approved' };
-
-    // If coordinates provided, find nearby salons
-    if (!isNaN(lat) && !isNaN(lng)) {
-      const radiusInRadians = radius / 6371; // Earth radius in km
-
-      query.coordinates = {
-        $geoWithin: {
-          $centerSphere: [[lng, lat], radiusInRadians]
-        }
-      };
-    }
-
-    const salons = await Salon.find(query)
-      .populate('adminId', 'name email phone')
-      .select('-__v')
-      .lean();
-
-    return NextResponse.json({ salons });
-  } catch (error) {
-    console.error('Error fetching salons:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch salons' },
-      { status: 500 }
-    );
-  }
-}
+import bcrypt from 'bcryptjs';
+import { extractCoordinatesFromGoogleMaps } from '@/lib/extractCoordinates';
 
 export async function POST(request) {
   try {
-    // ✅ Check authentication using your JWT auth
-    const user = getUserFromRequest(request);
-    
-    if (!user || user.role !== 'main-admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Main admin access required' },
-        { status: 401 }
-      );
-    }
-
     await connectDB();
 
     const body = await request.json();
@@ -63,7 +15,7 @@ export async function POST(request) {
       phone,
       email,
       address,
-      coordinates,
+      googleMapsLink,
       openingHours,
       logo,
       images,
@@ -73,10 +25,26 @@ export async function POST(request) {
       adminPassword,
     } = body;
 
-    // Validate required fields
-    if (!name || !phone || !email || !adminName || !adminEmail || !adminPassword) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
+    console.log('📝 Creating new salon:', name);
+    console.log('🗺️ Google Maps Link:', googleMapsLink);
+
+    // Extract coordinates from Google Maps link
+    let coordinates = [78.4867, 17.385]; // Default: Hyderabad
+    if (googleMapsLink) {
+      const extractedCoords = await extractCoordinatesFromGoogleMaps(googleMapsLink);
+      if (extractedCoords) {
+        coordinates = extractedCoords;
+        console.log('✅ Coordinates extracted:', coordinates);
+      } else {
+        console.log('⚠️ Could not extract coordinates, using default');
+      }
+    }
+
+    // Check if salon email already exists
+    const existingSalon = await Salon.findOne({ email });
+    if (existingSalon) {
+      return Response.json(
+        { error: 'A salon with this email already exists' },
         { status: 400 }
       );
     }
@@ -84,64 +52,78 @@ export async function POST(request) {
     // Check if admin email already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
     if (existingAdmin) {
-      return NextResponse.json(
-        { error: 'Admin email already exists' },
+      return Response.json(
+        { error: 'An admin with this email already exists' },
         { status: 400 }
       );
     }
 
-    // Check if salon email already exists
-    const existingSalon = await Salon.findOne({ email });
-    if (existingSalon) {
-      return NextResponse.json(
-        { error: 'Salon email already exists' },
-        { status: 400 }
-      );
-    }
+    // Hash admin password
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     // Create admin user
-    const hashedPassword = await hashPassword(adminPassword);
     const admin = await User.create({
       name: adminName,
       email: adminEmail,
-      phone: adminPhone || '',
+      phone: adminPhone,
       password: hashedPassword,
       role: 'salon-admin',
       isActive: true,
     });
 
+    console.log('✅ Admin created:', adminEmail);
+
     // Create salon
     const salon = await Salon.create({
       name,
-      description: description || '',
+      description,
       phone,
       email,
       address,
-      coordinates: coordinates || [78.4867, 17.385], // Default coordinates
+      coordinates,
+      googleMapsLink,
+      openingHours,
+      logo,
+      images,
       adminId: admin._id,
       status: 'approved',
-      openingHours: openingHours || [
-        { day: 'Monday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Tuesday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Wednesday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Thursday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Friday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Saturday', open: '09:00', close: '21:00', isClosed: false },
-        { day: 'Sunday', open: '09:00', close: '21:00', isClosed: false },
-      ],
-      logo: logo || null,
-      images: images || [],
     });
 
-    return NextResponse.json({
+    console.log('✅ Salon created:', salon._id);
+
+    return Response.json({
       success: true,
-      salon,
       message: 'Salon created successfully',
+      salon,
     });
   } catch (error) {
-    console.error('Error creating salon:', error);
-    return NextResponse.json(
-      { error: 'Failed to create salon' },
+    console.error('❌ Error creating salon:', error);
+    return Response.json(
+      { error: 'Failed to create salon', message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request) {
+  try {
+    await connectDB();
+
+    // Get only approved salons for public access
+    const salons = await Salon.find({ status: 'approved' })
+      .populate('adminId', 'name email phone isActive')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return Response.json({
+      success: true,
+      salons,
+      total: salons.length,
+    });
+  } catch (error) {
+    console.error('Error fetching salons:', error);
+    return Response.json(
+      { error: 'Failed to fetch salons', message: error.message },
       { status: 500 }
     );
   }
