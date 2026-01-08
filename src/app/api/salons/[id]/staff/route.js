@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Staff from '@/models/Staff';
+import mongoose from 'mongoose';
 
 export async function GET(request, { params }) {
   try {
@@ -9,19 +10,28 @@ export async function GET(request, { params }) {
 
     console.log('👨‍💼 Fetching staff for salon:', id);
 
-    // Find all active staff for this salon (public view, no auth needed)
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid salon ID'
+      }, { status: 400 });
+    }
+
+    // Find active staff for this salon
     const staff = await Staff.find({ 
-      salonId: id,  // or salon: id, depending on your schema
-      isActive: true  // Only show active staff
+      salon: id,
+      isActive: true  // ✅ Only show active staff
     })
-      .select('name specialization experience photo role specialties rating')
+      .select('name email phone role specialization specialties experience photo rating totalReviews')
+      .sort({ createdAt: -1 })
       .lean();
 
-    console.log(`✅ Found ${staff.length} staff members`);
+    console.log('✅ Found', staff.length, 'staff members for salon', id);
 
     return NextResponse.json({
       success: true,
-      staff: staff,
+      staff,
       count: staff.length
     });
 
@@ -30,7 +40,6 @@ export async function GET(request, { params }) {
     return NextResponse.json(
       { 
         success: false, 
-        staff: [],  // Return empty array instead of error
         error: 'Failed to fetch staff',
         message: error.message 
       },

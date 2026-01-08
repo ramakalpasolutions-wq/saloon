@@ -10,9 +10,9 @@ export async function GET(request, { params }) {
     console.log('📋 Fetching queue entry:', id);
 
     const queueEntry = await Queue.findById(id)
-      .populate('service', 'name price duration category')  // ✅ service (singular)
+      .populate('service', 'name price duration category')
       .populate('salon', 'name address city phone')
-      .populate('staff', 'name specialization')
+      .populate('staff', 'name specialization experience')
       .lean();
 
     if (!queueEntry) {
@@ -27,10 +27,10 @@ export async function GET(request, { params }) {
       ...queueEntry,
       services: queueEntry.service ? [queueEntry.service] : [],
       position: queueEntry.queueNumber,
-      checkedInAt: queueEntry.checkInTime,  // Map checkInTime to checkedInAt
+      checkedInAt: queueEntry.checkInTime,
     };
 
-    console.log('✅ Queue entry found:', responseEntry);
+    console.log('✅ Queue entry found');
 
     return NextResponse.json({
       success: true,

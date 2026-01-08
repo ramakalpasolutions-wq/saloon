@@ -52,6 +52,16 @@ const QueueSchema = new mongoose.Schema({
     default: 0
   },
   
+  // ✅ NEW: Appointment Date & Time
+  appointmentDate: {
+    type: String, // Store as "2026-01-08"
+    trim: true
+  },
+  appointmentTime: {
+    type: String, // Store as "14:30"
+    trim: true
+  },
+  
   // Status
   status: {
     type: String,
@@ -109,6 +119,7 @@ const QueueSchema = new mongoose.Schema({
 QueueSchema.index({ salon: 1, status: 1, checkInTime: -1 });
 QueueSchema.index({ salon: 1, queueNumber: 1 });
 QueueSchema.index({ customerPhone: 1, salon: 1 });
+QueueSchema.index({ appointmentDate: 1, appointmentTime: 1 }); // ✅ NEW INDEX
 
 // Method to get position in queue
 QueueSchema.methods.getQueuePosition = async function() {
@@ -133,4 +144,26 @@ QueueSchema.statics.getNextQueueNumber = async function(salonId) {
   return lastQueue ? lastQueue.queueNumber + 1 : 1;
 };
 
-export default mongoose.models.Queue || mongoose.model('Queue', QueueSchema);
+// ✅ NEW: Static method to get next queue number for specific date
+QueueSchema.statics.getNextQueueNumberForDate = async function(salonId, appointmentDate) {
+  const lastQueue = await this.findOne({
+    salon: salonId,
+    appointmentDate: appointmentDate
+  }).sort({ queueNumber: -1 });
+  
+  return lastQueue ? lastQueue.queueNumber + 1 : 1;
+};
+
+// ✅ NEW: Method to format appointment date/time
+QueueSchema.methods.getFormattedAppointment = function() {
+  if (!this.appointmentDate || !this.appointmentTime) {
+    return null;
+  }
+  
+  return `${this.appointmentDate} at ${this.appointmentTime}`;
+};
+
+// ✅ Delete cached model to force reload
+delete mongoose.models.Queue;
+
+export default mongoose.model('Queue', QueueSchema);

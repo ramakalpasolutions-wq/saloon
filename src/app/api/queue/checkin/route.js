@@ -1,19 +1,27 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import { NextResponse } from 'next/server';  // ✅ ADD THIS
+import connectDB from '@/lib/mongodb';  // ✅ ADD THIS
 import Queue from '@/models/Queue';
 
 export async function POST(request) {
   try {
     await connectDB();
 
-    const { salonId, customerName, customerPhone, services } = await request.json();
+    const { salonId, customerName, customerPhone, services, appointmentDate, appointmentTime, staffId } = await request.json();
 
-    console.log('📋 Check-in request:', { salonId, customerName, customerPhone, services });
+    console.log('📋 Check-in request:', { salonId, customerName, customerPhone, services, appointmentDate, appointmentTime, staffId });
 
     // Validate required fields
     if (!salonId || !customerName || !customerPhone || !services || services.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate date and time
+    if (!appointmentDate || !appointmentTime) {
+      return NextResponse.json(
+        { success: false, error: 'Appointment date and time are required' },
         { status: 400 }
       );
     }
@@ -29,15 +37,18 @@ export async function POST(request) {
 
     const estimatedWaitTime = queueCount * 15;
 
-    // ✅ Create queue entry with service (singular) - use first service
+    // Create queue entry with all fields
     const queueEntry = await Queue.create({
       salon: salonId,
       customerName,
       customerPhone,
-      service: services[0],  // ✅ Use first service ID (singular)
+      service: services[0],  // First service
+      staff: staffId || null,  // Staff (optional)
       queueNumber,
       estimatedWaitTime,
       status: 'waiting',
+      appointmentDate,
+      appointmentTime,
     });
 
     console.log('✅ Queue entry created:', queueEntry);
@@ -51,6 +62,9 @@ export async function POST(request) {
         queueNumber: queueEntry.queueNumber,
         estimatedWaitTime: queueEntry.estimatedWaitTime,
         status: queueEntry.status,
+        appointmentDate,
+        appointmentTime,
+        staffId,
       },
     });
 

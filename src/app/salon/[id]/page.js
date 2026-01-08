@@ -14,97 +14,60 @@ export default function SalonDetailPage() {
   const [selectedServices, setSelectedServices] = useState([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentTime, setAppointmentTime] = useState('');
+  const [selectedStaff, setSelectedStaff] = useState(null);  // ✅ NEW: Selected staff
   const [checkingIn, setCheckingIn] = useState(false);
 
   useEffect(() => {
     if (params.id) {
       fetchSalonDetails();
     }
+    
+    const today = new Date().toISOString().split('T')[0];
+    setAppointmentDate(today);
   }, [params.id]);
 
   const fetchSalonDetails = async () => {
     try {
       setLoading(true);
-
-      // Fetch salon details
-      console.log('🔍 Fetching salon:', params.id);
+      
       const salonRes = await fetch(`/api/salons/${params.id}`);
-
-      if (!salonRes.ok) {
-        throw new Error(`Salon API returned ${salonRes.status}`);
-      }
-
       const salonData = await salonRes.json();
-      console.log('📍 Salon data:', salonData);
-
+      
       if (salonData.success) {
         setSalon(salonData.salon);
-
-        // Fetch services for this salon
-        try {
-          console.log('🔍 Fetching services...');
-          const servicesRes = await fetch(`/api/salons/${params.id}/services`);
-
-          if (servicesRes.ok) {
-            const servicesData = await servicesRes.json();
-            console.log('✂️ Services:', servicesData);
-
-            if (servicesData.success && servicesData.services) {
-              setServices(servicesData.services);
-            } else {
-              console.warn('⚠️ No services found');
-              setServices([]);
-            }
-          } else {
-            console.warn('⚠️ Services API failed:', servicesRes.status);
-            setServices([]);
-          }
-        } catch (error) {
-          console.error('❌ Error fetching services:', error);
-          setServices([]);
+        
+        const servicesRes = await fetch(`/api/salons/${params.id}/services`);
+        const servicesData = await servicesRes.json();
+        if (servicesData.success) {
+          setServices(servicesData.services);
         }
-
-        // Fetch staff for this salon
-        try {
-          console.log('🔍 Fetching staff...');
-          const staffRes = await fetch(`/api/salons/${params.id}/staff`);
-
-          if (staffRes.ok) {
-            const staffData = await staffRes.json();
-            console.log('👨‍💼 Staff:', staffData);
-
-            if (staffData.success && staffData.staff) {
-              setStaff(staffData.staff);
-            } else {
-              console.warn('⚠️ No staff found');
-              setStaff([]);
-            }
-          } else {
-            console.warn('⚠️ Staff API failed:', staffRes.status);
-            setStaff([]);
-          }
-        } catch (error) {
-          console.error('❌ Error fetching staff:', error);
-          setStaff([]);
+        
+        const staffRes = await fetch(`/api/salons/${params.id}/staff`);
+        const staffData = await staffRes.json();
+        if (staffData.success) {
+          setStaff(staffData.staff);
         }
-      } else {
-        throw new Error(salonData.error || 'Salon not found');
       }
     } catch (error) {
-      console.error('❌ Error in fetchSalonDetails:', error);
-      alert(`Error: ${error.message}`);
+      console.error('Error fetching salon details:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const toggleService = (serviceId) => {
-    setSelectedServices(prev =>
-      prev.includes(serviceId)
+    setSelectedServices(prev => 
+      prev.includes(serviceId) 
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
+  };
+
+  // ✅ NEW: Handle staff selection
+  const handleStaffSelect = (staffId) => {
+    setSelectedStaff(staffId === selectedStaff ? null : staffId);
   };
 
   const handleCheckIn = async () => {
@@ -118,6 +81,24 @@ export default function SalonDetailPage() {
       return;
     }
 
+    if (!appointmentDate) {
+      alert('Please select a date');
+      return;
+    }
+
+    if (!appointmentTime) {
+      alert('Please select a time');
+      return;
+    }
+
+    // ✅ VALIDATE STAFF SELECTION (optional or required)
+    if (!selectedStaff) {
+      const confirmWithoutStaff = confirm('No staff selected. Continue with any available staff?');
+      if (!confirmWithoutStaff) {
+        return;
+      }
+    }
+
     setCheckingIn(true);
 
     try {
@@ -129,13 +110,17 @@ export default function SalonDetailPage() {
           customerName,
           customerPhone,
           services: selectedServices,
+          appointmentDate,
+          appointmentTime,
+          staffId: selectedStaff,  // ✅ ADD STAFF ID
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        alert(`✅ Checked in successfully!\n\nQueue Position: #${data.queueEntry.position}\nEstimated Wait: ${data.queueEntry.estimatedWaitTime} minutes`);
+        const staffName = selectedStaff ? staff.find(s => s._id === selectedStaff)?.name : 'Any available staff';
+        alert(`✅ Checked in successfully!\n\nQueue Position: #${data.queueEntry.position}\nStaff: ${staffName}\nDate: ${appointmentDate}\nTime: ${appointmentTime}`);
         router.push(`/queue/${data.queueEntry._id}`);
       } else {
         alert('Failed to check in: ' + data.error);
@@ -160,6 +145,17 @@ export default function SalonDetailPage() {
       const service = services.find(s => s._id === serviceId);
       return total + (service?.duration || 0);
     }, 0);
+  };
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 21; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(timeString);
+      }
+    }
+    return slots;
   };
 
   if (loading) {
@@ -198,35 +194,13 @@ export default function SalonDetailPage() {
       <div className="pt-16 min-h-screen bg-gray-50">
         {/* Hero Section */}
         <div className="relative h-80 bg-gradient-to-r from-green-600 to-blue-600">
-          {salon.logo?.url ? (
-            <div className="absolute inset-0">
-              <img src={salon.logo.url} alt={salon.name} className="w-full h-full object-cover opacity-20" />
-            </div>
-          ) : null}
-
           <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
             <div>
               {salon.logo?.url && (
                 <img src={salon.logo.url} alt={salon.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-xl" />
               )}
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{salon.name}</h1>
-              {salon.address?.fullAddress && (
-                <p className="text-white text-lg mb-4">📍 {salon.address.fullAddress}</p>
-              )}
-              <div className="flex items-center justify-center gap-4">
-                {salon.rating > 0 && (
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                    <span className="text-yellow-300 text-xl">⭐</span>
-                    <span className="text-white font-bold">{salon.rating.toFixed(1)}</span>
-                    <span className="text-white/80">({salon.totalReviews} reviews)</span>
-                  </div>
-                )}
-                {salon.phone && (
-                  <a href={`tel:${salon.phone}`} className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full font-semibold hover:bg-white/30 transition-all">
-                    📞 Call Now
-                  </a>
-                )}
-              </div>
+              <p className="text-white text-lg mb-4">📍 {salon.address}, {salon.city}</p>
             </div>
           </div>
         </div>
@@ -235,7 +209,7 @@ export default function SalonDetailPage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-
+              
               {/* Services Section */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -249,10 +223,11 @@ export default function SalonDetailPage() {
                       <div
                         key={service._id}
                         onClick={() => toggleService(service._id)}
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedServices.includes(service._id)
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                          selectedServices.includes(service._id)
                             ? 'border-green-600 bg-green-50'
                             : 'border-gray-200 hover:border-green-300'
-                          }`}
+                        }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -260,7 +235,7 @@ export default function SalonDetailPage() {
                               <input
                                 type="checkbox"
                                 checked={selectedServices.includes(service._id)}
-                                onChange={() => { }}
+                                onChange={() => {}}
                                 className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
                               />
                               <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
@@ -290,27 +265,48 @@ export default function SalonDetailPage() {
                   <div className="text-center py-12">
                     <div className="text-5xl mb-4">✂️</div>
                     <p className="text-gray-600">No services available yet</p>
-                    <p className="text-sm text-gray-500 mt-2">This salon hasn't added services</p>
                   </div>
                 )}
               </div>
 
-              {/* Staff Section */}
+              {/* ✅ STAFF SELECTION SECTION */}
               {staff.length > 0 && (
                 <div className="bg-white rounded-xl shadow-md p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">👨‍💼 Our Staff</h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">👨‍💼 Select Staff (Optional)</h2>
+                    <span className="text-sm text-gray-600">{staff.length} staff available</span>
+                  </div>
+                  
                   <div className="grid md:grid-cols-2 gap-4">
                     {staff.map((member) => (
-                      <div key={member._id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                      <div
+                        key={member._id}
+                        onClick={() => handleStaffSelect(member._id)}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          selectedStaff === member._id
+                            ? 'border-green-600 bg-green-50 shadow-md'
+                            : 'border-gray-200 hover:border-green-300 hover:shadow-sm'
+                        }`}
+                      >
+                        {/* Staff Photo */}
                         {member.photo?.url ? (
                           <img src={member.photo.url} alt={member.name} className="w-16 h-16 rounded-full object-cover" />
                         ) : (
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold text-xl">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
                             {member.name.charAt(0)}
                           </div>
                         )}
-                        <div>
-                          <h3 className="font-bold text-gray-900">{member.name}</h3>
+                        
+                        {/* Staff Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-gray-900">{member.name}</h3>
+                            {selectedStaff === member._id && (
+                              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
                           {member.specialization && (
                             <p className="text-sm text-gray-600">{member.specialization}</p>
                           )}
@@ -321,14 +317,14 @@ export default function SalonDetailPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* About Section */}
-              {salon.description && (
-                <div className="bg-white rounded-xl shadow-md p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">ℹ️ About</h2>
-                  <p className="text-gray-700 leading-relaxed">{salon.description}</p>
+                  
+                  {selectedStaff && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <span className="font-semibold">Selected:</span> {staff.find(s => s._id === selectedStaff)?.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -358,9 +354,25 @@ export default function SalonDetailPage() {
                         <span className="font-bold text-green-600 text-lg">₹{getSelectedServicesTotal()}</span>
                       </div>
                       <div className="text-sm text-gray-600 mt-2">
-                        ⏱️ Estimated time: {getSelectedServicesDuration()} minutes
+                        ⏱️ Duration: {getSelectedServicesDuration()} min
                       </div>
                     </div>
+
+                    {/* ✅ SELECTED STAFF DISPLAY */}
+                    {selectedStaff && (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-2">Selected Staff</h4>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white font-bold">
+                            {staff.find(s => s._id === selectedStaff)?.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{staff.find(s => s._id === selectedStaff)?.name}</p>
+                            <p className="text-xs text-gray-600">{staff.find(s => s._id === selectedStaff)?.specialization}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Customer Info Form */}
                     <div className="space-y-3">
@@ -387,15 +399,43 @@ export default function SalonDetailPage() {
                           required
                         />
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Date *</label>
+                        <input
+                          type="date"
+                          value={appointmentDate}
+                          onChange={(e) => setAppointmentDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Time *</label>
+                        <select
+                          value={appointmentTime}
+                          onChange={(e) => setAppointmentTime(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          required
+                        >
+                          <option value="">Select time</option>
+                          {generateTimeSlots().map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     <button
                       onClick={handleCheckIn}
-                      disabled={checkingIn || !customerName || !customerPhone}
-                      className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${checkingIn || !customerName || !customerPhone
+                      disabled={checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime}
+                      className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
+                        checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:shadow-xl'
-                        }`}
+                      }`}
                     >
                       {checkingIn ? (
                         <span className="flex items-center justify-center gap-2">
