@@ -26,38 +26,82 @@ export default function SalonDetailPage() {
   const fetchSalonDetails = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch salon details
+      console.log('🔍 Fetching salon:', params.id);
       const salonRes = await fetch(`/api/salons/${params.id}`);
+
+      if (!salonRes.ok) {
+        throw new Error(`Salon API returned ${salonRes.status}`);
+      }
+
       const salonData = await salonRes.json();
-      
+      console.log('📍 Salon data:', salonData);
+
       if (salonData.success) {
         setSalon(salonData.salon);
-        
+
         // Fetch services for this salon
-        const servicesRes = await fetch(`/api/salons/${params.id}/services`);
-        const servicesData = await servicesRes.json();
-        if (servicesData.success) {
-          setServices(servicesData.services);
+        try {
+          console.log('🔍 Fetching services...');
+          const servicesRes = await fetch(`/api/salons/${params.id}/services`);
+
+          if (servicesRes.ok) {
+            const servicesData = await servicesRes.json();
+            console.log('✂️ Services:', servicesData);
+
+            if (servicesData.success && servicesData.services) {
+              setServices(servicesData.services);
+            } else {
+              console.warn('⚠️ No services found');
+              setServices([]);
+            }
+          } else {
+            console.warn('⚠️ Services API failed:', servicesRes.status);
+            setServices([]);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching services:', error);
+          setServices([]);
         }
-        
+
         // Fetch staff for this salon
-        const staffRes = await fetch(`/api/salons/${params.id}/staff`);
-        const staffData = await staffRes.json();
-        if (staffData.success) {
-          setStaff(staffData.staff);
+        try {
+          console.log('🔍 Fetching staff...');
+          const staffRes = await fetch(`/api/salons/${params.id}/staff`);
+
+          if (staffRes.ok) {
+            const staffData = await staffRes.json();
+            console.log('👨‍💼 Staff:', staffData);
+
+            if (staffData.success && staffData.staff) {
+              setStaff(staffData.staff);
+            } else {
+              console.warn('⚠️ No staff found');
+              setStaff([]);
+            }
+          } else {
+            console.warn('⚠️ Staff API failed:', staffRes.status);
+            setStaff([]);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching staff:', error);
+          setStaff([]);
         }
+      } else {
+        throw new Error(salonData.error || 'Salon not found');
       }
     } catch (error) {
-      console.error('Error fetching salon details:', error);
+      console.error('❌ Error in fetchSalonDetails:', error);
+      alert(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const toggleService = (serviceId) => {
-    setSelectedServices(prev => 
-      prev.includes(serviceId) 
+    setSelectedServices(prev =>
+      prev.includes(serviceId)
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
@@ -159,7 +203,7 @@ export default function SalonDetailPage() {
               <img src={salon.logo.url} alt={salon.name} className="w-full h-full object-cover opacity-20" />
             </div>
           ) : null}
-          
+
           <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
             <div>
               {salon.logo?.url && (
@@ -191,7 +235,7 @@ export default function SalonDetailPage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              
+
               {/* Services Section */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -205,11 +249,10 @@ export default function SalonDetailPage() {
                       <div
                         key={service._id}
                         onClick={() => toggleService(service._id)}
-                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                          selectedServices.includes(service._id)
+                        className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${selectedServices.includes(service._id)
                             ? 'border-green-600 bg-green-50'
                             : 'border-gray-200 hover:border-green-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -217,7 +260,7 @@ export default function SalonDetailPage() {
                               <input
                                 type="checkbox"
                                 checked={selectedServices.includes(service._id)}
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
                               />
                               <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
@@ -349,11 +392,10 @@ export default function SalonDetailPage() {
                     <button
                       onClick={handleCheckIn}
                       disabled={checkingIn || !customerName || !customerPhone}
-                      className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
-                        checkingIn || !customerName || !customerPhone
+                      className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${checkingIn || !customerName || !customerPhone
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:shadow-xl'
-                      }`}
+                        }`}
                     >
                       {checkingIn ? (
                         <span className="flex items-center justify-center gap-2">

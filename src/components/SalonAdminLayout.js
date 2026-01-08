@@ -1,14 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SalonAdminLayout({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
-  // ✅ Check auth using your existing /api/auth/me endpoint
   useEffect(() => {
     checkAuth();
   }, []);
@@ -23,7 +23,6 @@ export default function SalonAdminLayout({ children }) {
         return;
       }
 
-      // Check if user is salon-admin
       if (data.user.role !== 'salon-admin') {
         router.push('/login');
         return;
@@ -58,64 +57,78 @@ export default function SalonAdminLayout({ children }) {
     );
   }
 
+  // Navigation items
+  const navItems = [
+    { href: '/salon-admin', icon: '📊', label: 'Dashboard' },
+    { href: '/salon-admin/queue', icon: '👥', label: 'Queue Management' },
+    { href: '/salon-admin/services', icon: '✂️', label: 'Services' },
+    { href: '/salon-admin/staff', icon: '👨‍💼', label: 'Staff' },
+    { href: '/salon-admin/settings', icon: '⚙️', label: 'Settings' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 overflow-y-auto z-40">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-green-600">💈 Salon Admin</h2>
-          {user && (
-            <p className="text-sm text-gray-600 mt-2">
-              {user.email || user.name}
-            </p>
-          )}
+      <aside className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-40">
+        {/* Logo Section */}
+        <div className="p-6 border-b border-green-500">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-2xl">
+              💈
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Salon Admin</h2>
+              <p className="text-xs text-green-100">Management Panel</p>
+            </div>
+          </div>
         </div>
-        
-        <nav className="px-4 py-4 space-y-1">
-          <Link 
-            href="/salon-admin" 
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-700 font-medium text-gray-700 transition-colors"
-          >
-            <span className="text-xl">📊</span>
-            <span>Dashboard</span>
-          </Link>
-          
-          <Link 
-            href="/salon-admin/queue" 
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-700 font-medium text-gray-700 transition-colors"
-          >
-            <span className="text-xl">👥</span>
-            <span>Queue Management</span>
-          </Link>
-          
-          <Link 
-            href="/salon-admin/services" 
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-700 font-medium text-gray-700 transition-colors"
-          >
-            <span className="text-xl">✂️</span>
-            <span>Services</span>
-          </Link>
-          
-          <Link 
-            href="/salon-admin/staff" 
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-700 font-medium text-gray-700 transition-colors"
-          >
-            <span className="text-xl">👨‍💼</span>
-            <span>Staff</span>
-          </Link>
-          
-          <Link 
-            href="/salon-admin/settings" 
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-700 font-medium text-gray-700 transition-colors"
-          >
-            <span className="text-xl">⚙️</span>
-            <span>Settings</span>
-          </Link>
 
-          <div className="pt-4 mt-4 border-t border-gray-200">
+        {/* User Info */}
+        {user && (
+          <div className="px-6 py-4 bg-green-800 bg-opacity-30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold">
+                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'A'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {user.name || 'Admin User'}
+                </p>
+                <p className="text-xs text-green-200 truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Navigation */}
+        <nav className="px-3 py-6 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all
+                  ${isActive 
+                    ? 'bg-white text-green-700 shadow-md' 
+                    : 'text-white hover:bg-green-800 hover:bg-opacity-50'
+                  }
+                `}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+
+          {/* Logout Button */}
+          <div className="pt-4 mt-4 border-t border-green-500">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-red-50 hover:text-red-700 font-medium text-gray-700 transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-white hover:bg-red-600 hover:bg-opacity-80 transition-all"
             >
               <span className="text-xl">🚪</span>
               <span>Logout</span>
@@ -125,7 +138,7 @@ export default function SalonAdminLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
+      <main className="ml-64 pt-20 p-8">
         {children}
       </main>
     </div>

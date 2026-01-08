@@ -13,10 +13,9 @@ export default function SalonAdminDashboard() {
     todayRevenue: 0
   });
 
-  // ✅ FIX: useEffect with empty dependency array
   useEffect(() => {
     fetchDashboardData();
-  }, []); // Empty array = run once on mount
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -35,13 +34,11 @@ export default function SalonAdminDashboard() {
       }
     } catch (error) {
       console.error('❌ Error fetching dashboard:', error);
-      // Don't throw - just log and continue
     } finally {
-      setLoading(false); // Always stop loading
+      setLoading(false);
     }
   };
 
-  // ✅ Show loading state
   if (loading) {
     return (
       <SalonAdminLayout>
@@ -57,7 +54,8 @@ export default function SalonAdminDashboard() {
 
   return (
     <SalonAdminLayout>
-      <div className="space-y-6">
+      {/* ✅ ADD PADDING TOP HERE */}
+      <div className="pt-20 space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-2">Welcome to your salon admin panel</p>

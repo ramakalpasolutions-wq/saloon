@@ -146,32 +146,38 @@ export async function DELETE(request, { params }) {
     });
     console.log(`✅ Deleted ${deletedBookings.deletedCount} bookings`);
 
-    // ✅ 4. Delete queue entries (if exists)
+    // ✅ 4. Delete queue entries (if Queue model exists)
     try {
-      const Queue = mongoose.models.Queue || (await import('@/models/Queue')).default;
-      const deletedQueue = await Queue.deleteMany({ 
-        $or: [
-          { salon: id },
-          { salonId: id }
-        ]
-      });
-      console.log(`✅ Deleted ${deletedQueue.deletedCount} queue entries`);
+      if (mongoose.models.Queue) {
+        const deletedQueue = await mongoose.models.Queue.deleteMany({ 
+          $or: [
+            { salon: id },
+            { salonId: id }
+          ]
+        });
+        console.log(`✅ Deleted ${deletedQueue.deletedCount} queue entries`);
+      } else {
+        console.log('ℹ️ Queue model not registered, skipping...');
+      }
     } catch (error) {
-      console.log('⚠️ Queue model not found, skipping...');
+      console.log('⚠️ Queue deletion error:', error.message);
     }
 
-    // ✅ 5. Delete reviews (if exists)
+    // ✅ 5. Delete reviews (FIXED - check if model exists first)
     try {
-      const Review = mongoose.models.Review || (await import('@/models/Review')).default;
-      const deletedReviews = await Review.deleteMany({ 
-        $or: [
-          { salon: id },
-          { salonId: id }
-        ]
-      });
-      console.log(`✅ Deleted ${deletedReviews.deletedCount} reviews`);
+      if (mongoose.models.Review) {
+        const deletedReviews = await mongoose.models.Review.deleteMany({ 
+          $or: [
+            { salon: id },
+            { salonId: id }
+          ]
+        });
+        console.log(`✅ Deleted ${deletedReviews.deletedCount} reviews`);
+      } else {
+        console.log('ℹ️ Review model not registered, skipping...');
+      }
     } catch (error) {
-      console.log('⚠️ Review model not found, skipping...');
+      console.log('⚠️ Review deletion error:', error.message);
     }
 
     // ✅ 6. Unlink users from salon

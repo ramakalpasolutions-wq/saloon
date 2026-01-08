@@ -2,86 +2,55 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Salon from '@/models/Salon';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request) {
   try {
-    console.log('🔍 Public API called');
     await connectDB();
-    console.log('✅ DB Connected');
-    
-    // Fetch all salons with any coordinate format
-    const salons = await Salon.find({
-      $or: [
-        { latitude: { $exists: true, $ne: null } },
-        { coordinates: { $exists: true, $ne: null } }
-      ]
-    })
-      .select('name phone address logo rating totalReviews googleMapsLink latitude longitude coordinates status')
-      .sort({ createdAt: -1 })
+
+    console.log('📍 Fetching public salons...');
+
+    // Get only approved salons
+    const salons = await Salon.find({ status: 'approved' })
+      .select('name phone email address city state zipCode googleMapsLink location description images')
       .lean();
 
-    console.log('📊 Total salons in DB:', salons.length);
-    
-    // ✅ Process salons - extract coordinates from array if needed
-    const processedSalons = salons.map(salon => {
-      let lat = salon.latitude;
-      let lng = salon.longitude;
-      
-      // If no direct lat/lng, extract from coordinates array
-      if ((!lat || !lng) && salon.coordinates && Array.isArray(salon.coordinates) && salon.coordinates.length === 2) {
-        lng = salon.coordinates[0]; // [longitude, latitude]
-        lat = salon.coordinates[1];
-        console.log(`📍 Extracted coords for ${salon.name}: [${lng}, ${lat}]`);
-      }
-      
-      return {
-        ...salon,
-        latitude: lat,
-        longitude: lng
-      };
-    });
-    
-    // Filter valid salons
-    const validSalons = processedSalons.filter(salon => 
-      salon.latitude && 
-      salon.longitude && 
-      typeof salon.latitude === 'number' && 
-      typeof salon.longitude === 'number' &&
-      !isNaN(salon.latitude) &&
-      !isNaN(salon.longitude)
-    );
-    
-    console.log('✅ Valid salons with coordinates:', validSalons.length);
-    
-    if (validSalons.length > 0) {
-      console.log('📍 Sample salon:', {
-        name: validSalons[0].name,
-        lat: validSalons[0].latitude,
-        lng: validSalons[0].longitude,
-        status: validSalons[0].status
-      });
-    } else {
-      console.warn('⚠️ No valid salons found. Check database coordinates.');
-    }
+    console.log(`✅ Found ${salons.length} approved salons`);
 
-    return NextResponse.json({ 
-      success: true, 
-      salons: validSalons,
-      count: validSalons.length,
-      total: salons.length
-    }, {
-      headers: {
-        'Cache-Control': 'no-store, max-age=0'
-      }
+    // Transform data to include latitude, longitude, and fullAddress
+    const transformedSalons = salons.map(salon => ({
+      _id: salon._id,
+      name: salon.name,
+      phone: salon.phone,
+      email: salon.email,
+      description: salon.description,
+      latitude: salon.location?.coordinates?.[1] || null,  // GeoJSON format: [lng, lat]
+      longitude: salon.location?.coordinates?.[0] || null,
+      googleMapsLink: salon.googleMapsLink,
+      address: {
+        fullAddress: `${salon.address || ''}, ${salon.city || ''}, ${salon.state || ''} ${salon.zipCode || ''}`.trim(),
+        street: salon.address,
+        city: salon.city,
+        state: salon.state,
+        zipCode: salon.zipCode,
+      },
+      logo: salon.images?.[0] || null,
+      rating: 4 + Math.random(), // Random rating for now
+    }));
+
+    return NextResponse.json({
+      success: true,
+      salons: transformedSalons,
+      count: transformedSalons.length
     });
+
   } catch (error) {
-    console.error('❌ Public API Error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      salons: [],
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 });
+    console.error('❌ Error fetching public salons:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to fetch salons',
+        message: error.message 
+      },
+      { status: 500 }
+    );
   }
 }

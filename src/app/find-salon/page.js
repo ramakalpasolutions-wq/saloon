@@ -10,6 +10,7 @@ export default function FindSalonPage() {
   const [salons, setSalons] = useState([]);
   const [filteredSalons, setFilteredSalons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [mapCenter, setMapCenter] = useState([17.385, 78.4867]);
@@ -107,12 +108,29 @@ export default function FindSalonPage() {
   const fetchSalons = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Fetching salons from /api/salons/public...');
+      
       const response = await fetch('/api/salons/public');
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
       const data = await response.json();
-
       console.log('📍 API Response:', data);
 
+      if (!response.ok) {
+        throw new Error(data.message || `API returned ${response.status}`);
+      }
+
       if (data.success && data.salons) {
+        console.log(`✅ Received ${data.salons.length} salons`);
+        
+        // Log first salon to check structure
+        if (data.salons.length > 0) {
+          console.log('📋 First salon:', data.salons[0]);
+        }
+        
         const salonsWithWaitTime = data.salons.map(salon => ({
           ...salon,
           estimatedWaitTime: Math.floor(Math.random() * 45)
@@ -125,11 +143,22 @@ export default function FindSalonPage() {
           const firstSalon = salonsWithWaitTime.find(s => s.latitude && s.longitude);
           if (firstSalon) {
             setMapCenter([firstSalon.latitude, firstSalon.longitude]);
+            console.log('📍 Map centered at:', [firstSalon.latitude, firstSalon.longitude]);
+          } else {
+            console.warn('⚠️ No salon has valid coordinates');
           }
         }
+      } else {
+        console.warn('⚠️ API response missing success or salons:', data);
+        setError('No salons available');
+        setSalons([]);
+        setFilteredSalons([]);
       }
     } catch (error) {
       console.error('❌ Error fetching salons:', error);
+      setError(error.message || 'Failed to load salons');
+      setSalons([]);
+      setFilteredSalons([]);
     } finally {
       setLoading(false);
     }
@@ -158,6 +187,28 @@ export default function FindSalonPage() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600 text-lg">Finding salons near you...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-20">
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Unable to Load Salons</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={fetchSalons}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </>
@@ -278,7 +329,7 @@ export default function FindSalonPage() {
                 <div className="p-12 text-center">
                   <div className="text-5xl mb-4">🔍</div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">No salons found</h3>
-                  <p className="text-gray-600 mb-4">Try "Use My Location" or search</p>
+                  <p className="text-gray-600 mb-4">Try searching or refresh</p>
                   <button onClick={fetchSalons} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     Refresh
                   </button>
