@@ -2,61 +2,12 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Salon from '@/models/Salon';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '@/lib/auth';
+import { extractCoordinatesFromGoogleMaps } from '@/lib/extractCoordinates';
 import * as XLSX from 'xlsx';
-import { getUserFromRequest } from '@/lib/auth';
-
-// Function to extract coordinates from Google Maps link
-function extractCoordinatesFromGoogleMapsLink(link) {
-  try {
-    if (!link || typeof link !== 'string') {
-      return null;
-    }
-
-    link = link.trim();
-
-    // Try to find @latitude,longitude pattern (most common)
-    let match = link.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) {
-      return [parseFloat(match[2]), parseFloat(match[1])]; // [longitude, latitude]
-    }
-
-    // Try to find q=latitude,longitude pattern
-    match = link.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) {
-      return [parseFloat(match[2]), parseFloat(match[1])]; // [longitude, latitude]
-    }
-
-    // Try to find /place/name/@lat,lng pattern
-    match = link.match(/\/place\/[^\/]+\/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) {
-      return [parseFloat(match[2]), parseFloat(match[1])]; // [longitude, latitude]
-    }
-
-    // Try to find ll=latitude,longitude pattern
-    match = link.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) {
-      return [parseFloat(match[2]), parseFloat(match[1])]; // [longitude, latitude]
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error extracting coordinates from link:', error);
-    return null;
-  }
-}
 
 export async function POST(request) {
   try {
-    const user = getUserFromRequest(request);
-
-    if (!user || user.role !== 'main-admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Main admin access required' },
-        { status: 401 }
-      );
-    }
-
     await connectDB();
 
     const formData = await request.formData();
@@ -69,127 +20,185 @@ export async function POST(request) {
       );
     }
 
+    // ✅ Read file as buffer for XLSX parsing
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // ✅ Parse XLSX file
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+    console.log(`📊 Parsed ${jsonData.length} rows from Excel`);
+
+    if (jsonData.length === 0) {
+      return NextResponse.json(
+        { error: 'Excel file is empty' },
+        { status: 400 }
+      );
+    }
 
     const results = {
-      total: data.length,
+      total: jsonData.length,
       success: 0,
       failed: 0,
       created: [],
-      errors: [],
+      errors: []
     };
 
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-
+    // Process each row
+    for (let i = 0; i < jsonData.length; i++) {
+      const rowNumber = i + 2; // +2 because Excel starts at 1 and we skip header
+      
       try {
-        if (!row['Salon Name'] || !row['Phone'] || !row['Email']) {
-          throw new Error('Missing required fields: Salon Name, Phone, or Email');
+        const row = jsonData[i];
+
+        console.log(`\n📝 Row ${rowNumber}:`, {
+          'Salon Name': row['Salon Name'],
+          'Email': row['Email']
+        });
+
+        // Get salon name
+        const salonName = row['Salon Name'] || row['salonName'] || row['name'];
+        
+        if (!salonName) {
+          throw new Error('Salon Name is required');
         }
 
-        if (!row['Admin Name'] || !row['Admin Email'] || !row['Admin Password']) {
-          throw new Error('Missing required admin fields');
+        console.log(`📝 Processing: ${salonName}`);
+
+        // Validate required fields
+        if (!row['Email']) {
+          throw new Error('Email is required');
+        }
+        if (!row['Phone']) {
+          throw new Error('Phone is required');
+        }
+        if (!row['Admin Email']) {
+          throw new Error('Admin Email is required');
+        }
+        if (!row['Admin Password']) {
+          throw new Error('Admin Password is required');
         }
 
-        const existingAdmin = await User.findOne({ email: row['Admin Email'] });
-        if (existingAdmin) {
-          throw new Error(`Admin email ${row['Admin Email']} already exists`);
+        // Extract address fields
+        const address = row['Street'] || row['Address'] || '';
+        const city = row['City'] || '';
+        const state = row['State'] || '';
+        const zipCode = String(row['ZIP'] || row['Zip Code'] || row['ZipCode'] || '');
+
+        if (!address || !city || !state || !zipCode) {
+          throw new Error(`Address fields incomplete. Got: Street="${address}", City="${city}", State="${state}", ZIP="${zipCode}"`);
         }
 
-        const existingSalon = await Salon.findOne({ email: row['Email'] });
-        if (existingSalon) {
-          throw new Error(`Salon email ${row['Email']} already exists`);
-        }
+        // ✅ Extract coordinates from Google Maps link
+        let coordinates = [0, 0];
+        let hasMapLink = false;
+        const googleMapsLink = row['Google Maps Link'] || row['GoogleMapsLink'] || '';
 
-        const address = {
-          street: row['Street'] || '',
-          city: row['City'] || '',
-          state: row['State'] || '',
-          zipCode: row['ZIP'] || '',
-          fullAddress: `${row['Street'] || ''}, ${row['City'] || ''}, ${row['State'] || ''} ${row['ZIP'] || ''}`,
-        };
-
-        let coordinates = [78.4867, 17.385];
-
-        if (row['Google Maps Link']) {
-          const extractedCoords = extractCoordinatesFromGoogleMapsLink(row['Google Maps Link']);
-          if (extractedCoords) {
-            coordinates = extractedCoords;
-            console.log(`✅ Extracted coordinates for ${row['Salon Name']}: [${coordinates[0]}, ${coordinates[1]}]`);
+        if (googleMapsLink) {
+          const extracted = await extractCoordinatesFromGoogleMaps(googleMapsLink);
+          if (extracted && extracted[0] !== 0 && extracted[1] !== 0) {
+            coordinates = extracted;
+            hasMapLink = true;
+            console.log(`✅ Extracted coordinates: [${coordinates[0]}, ${coordinates[1]}]`);
           } else {
-            console.log(`⚠️ Could not extract coordinates from link for ${row['Salon Name']}, using default`);
+            console.log('⚠️ Could not extract coordinates from Google Maps link');
           }
         } else {
-          console.log(`⚠️ No Google Maps link provided for ${row['Salon Name']}, using default coordinates`);
+          console.log('⚠️ No Google Maps link provided');
         }
 
-        const hashedPassword = await bcrypt.hash(row['Admin Password'], 10);
-        const admin = await User.create({
-          name: row['Admin Name'],
-          email: row['Admin Email'],
-          phone: row['Admin Phone'] || '',
-          password: hashedPassword,
-          role: 'salon-admin',
-          isActive: true,
-        });
+        // Check if admin user already exists
+        const adminEmail = row['Admin Email'].toLowerCase().trim();
+        let adminUser = await User.findOne({ email: adminEmail });
+        
+        if (!adminUser) {
+          // Create salon admin user
+          const hashedPassword = await hashPassword(row['Admin Password']);
+          
+          adminUser = await User.create({
+            name: row['Admin Name'] || `${salonName} Admin`,
+            email: adminEmail,
+            phone: row['Admin Phone'] || row['Phone'],
+            password: hashedPassword,
+            role: 'salon-admin',
+            isActive: true,
+          });
 
+          console.log(`✅ Created admin user: ${adminUser.email}`);
+        } else {
+          console.log(`ℹ️ Using existing admin: ${adminUser.email}`);
+        }
+
+        // Create salon
         const salon = await Salon.create({
-          name: row['Salon Name'],
+          name: salonName,
           description: row['Description'] || '',
-          phone: row['Phone'],
-          email: row['Email'],
+          phone: String(row['Phone']),
+          email: row['Email'].toLowerCase().trim(),
           address: address,
-          coordinates: coordinates,
-          googleMapsLink: row['Google Maps Link'] || '', // ✅ Make sure this line exists
-          adminId: admin._id,
+          city: city,
+          state: state,
+          zipCode: zipCode,
+          googleMapsLink: googleMapsLink,
+          location: {
+            type: 'Point',
+            coordinates: coordinates
+          },
+          adminId: adminUser._id,
           status: 'approved',
-          openingHours: [
-            { day: 'Monday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Tuesday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Wednesday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Thursday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Friday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Saturday', open: '09:00', close: '21:00', isClosed: false },
-            { day: 'Sunday', open: '09:00', close: '21:00', isClosed: false },
-          ],
         });
 
-        results.success++;
+        // Link salon to user
+        if (!adminUser.salonId) {
+          adminUser.salonId = salon._id;
+          await adminUser.save();
+        }
+
+        console.log(`✅ Created salon: ${salon.name}`);
+
+        // Add to results
         results.created.push({
-          row: i + 2,
-          salonName: row['Salon Name'],
-          adminEmail: row['Admin Email'],
+          salonName: salon.name,
+          adminEmail: adminUser.email,
           coordinates: coordinates,
-          hasMapLink: !!row['Google Maps Link'],
+          hasMapLink: hasMapLink
         });
+        
+        results.success++;
 
       } catch (error) {
-        console.error(`Error processing row ${i + 2}:`, error);
-        results.failed++;
+        console.error(`❌ Error processing row ${rowNumber}:`, error.message);
+        
+        const row = jsonData[i];
+        const salonName = row['Salon Name'] || row['salonName'] || 'Unknown';
+
         results.errors.push({
-          row: i + 2,
-          salonName: row['Salon Name'] || 'Unknown',
-          error: error.message,
+          row: rowNumber,
+          salonName: salonName,
+          error: error.message
         });
+        
+        results.failed++;
       }
     }
 
+    console.log(`\n📊 Final Results: ${results.success} success, ${results.failed} failed`);
+
     return NextResponse.json({
       success: true,
-      message: `Processed ${results.total} salons`,
-      results,
+      message: `Processed ${results.total} rows`,
+      results: results
     });
 
   } catch (error) {
-    console.error('Bulk upload error:', error);
+    console.error('❌ Bulk upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to process bulk upload' },
+      { error: 'Bulk upload failed', message: error.message },
       { status: 500 }
     );
   }

@@ -9,7 +9,6 @@ export async function POST(request) {
 
     const { email, password } = await request.json();
 
-    // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -17,8 +16,9 @@ export async function POST(request) {
       );
     }
 
-    // Find user
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // ✅ Find user and explicitly include salonId
+    const user = await User.findOne({ email: email.toLowerCase() }).lean();
+      
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
@@ -26,7 +26,6 @@ export async function POST(request) {
       );
     }
 
-    // Check if user is active
     if (!user.isActive) {
       return NextResponse.json(
         { error: 'Account is deactivated' },
@@ -43,15 +42,25 @@ export async function POST(request) {
       );
     }
 
-    // Generate token
-    const token = generateToken({
-      _id: user._id,
+    // ✅ Build token payload with proper salonId
+    const tokenPayload = {
+      _id: user._id.toString(),
       email: user.email,
       role: user.role,
-      salonId: user.salonId,
-    });
+    };
 
-    // Create response with cookie
+    // ✅ Add salonId if exists (convert ObjectId to string)
+    if (user.salonId) {
+      tokenPayload.salonId = user.salonId.toString();
+      console.log('✅ Including salonId in token:', tokenPayload.salonId);
+    } else {
+      console.warn('⚠️ User has no salonId:', user.email);
+    }
+
+    console.log('🔑 Creating token with payload:', tokenPayload);
+
+    const token = generateToken(tokenPayload);
+
     const response = NextResponse.json({
       success: true,
       message: 'Login successful',
@@ -65,12 +74,11 @@ export async function POST(request) {
       },
     });
 
-    // Set cookie
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
     });
 
     return response;

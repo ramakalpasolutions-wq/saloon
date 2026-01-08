@@ -4,37 +4,43 @@ const ServiceSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true
   },
-  salonId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Salon',
-    required: true,
+  description: {
+    type: String,
+    trim: true
   },
-  description: String,
   price: {
     type: Number,
     required: true,
+    min: 0
   },
   duration: {
     type: Number, // in minutes
-    required: true,
+    required: true
   },
   category: {
     type: String,
-    enum: ['haircut', 'coloring', 'styling', 'treatment', 'facial', 'spa', 'other'],
+    trim: true
   },
-  image: {
-    url: String,
-    publicId: String,
+  salon: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Salon',
+    required: true,
+    index: true
   },
   isActive: {
     type: Boolean,
-    default: true,
+    default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  image: {
+    url: String,
+    public_id: String
+  }
+}, {
+  timestamps: true
 });
+
+ServiceSchema.index({ salon: 1, isActive: 1 });
 
 export default mongoose.models.Service || mongoose.model('Service', ServiceSchema);

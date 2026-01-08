@@ -4,6 +4,7 @@ import Staff from '@/models/Staff';
 import Service from '@/models/Service';
 import Booking from '@/models/Booking';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 import { extractCoordinatesFromGoogleMaps } from '@/lib/extractCoordinates';
 
 export async function GET(request, { params }) {
@@ -13,8 +14,6 @@ export async function GET(request, { params }) {
 
     const salon = await Salon.findById(id)
       .populate('adminId', 'name email phone isActive')
-      .populate('staff')
-      .populate('services')
       .lean();
 
     if (!salon) {
@@ -52,7 +51,10 @@ export async function PUT(request, { params }) {
     if (googleMapsLink) {
       const extractedCoords = await extractCoordinatesFromGoogleMaps(googleMapsLink);
       if (extractedCoords) {
-        updateData.coordinates = extractedCoords;
+        updateData.location = {
+          type: 'Point',
+          coordinates: extractedCoords
+        };
         console.log('✅ New coordinates extracted:', extractedCoords);
       } else {
         console.log('⚠️ Could not extract new coordinates, keeping old ones');
@@ -92,12 +94,21 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return Response.json(
+        { error: 'Invalid salon ID' },
+        { status: 400 }
+      );
+    }
+
     await connectDB();
 
     console.log('🗑️ Starting cascade delete for salon:', id);
 
     // Find the salon first to get adminId
-    const salon = await Salon.findById(id);
+    const salon = await Salon.findById(id).lean();
+    
     if (!salon) {
       return Response.json(
         { error: 'Salon not found' },
@@ -108,19 +119,69 @@ export async function DELETE(request, { params }) {
     const adminId = salon.adminId;
     console.log('📧 Admin ID to delete:', adminId);
 
-    // 1. Delete all related staff
-    const deletedStaff = await Staff.deleteMany({ salonId: id });
+    // ✅ 1. Delete all staff members
+    const deletedStaff = await Staff.deleteMany({ 
+      $or: [
+        { salon: id },
+        { salonId: id }
+      ]
+    });
     console.log(`✅ Deleted ${deletedStaff.deletedCount} staff members`);
 
-    // 2. Delete all related services
-    const deletedServices = await Service.deleteMany({ salonId: id });
+    // ✅ 2. Delete all services
+    const deletedServices = await Service.deleteMany({ 
+      $or: [
+        { salon: id },
+        { salonId: id }
+      ]
+    });
     console.log(`✅ Deleted ${deletedServices.deletedCount} services`);
 
-    // 3. Delete all related bookings
-    const deletedBookings = await Booking.deleteMany({ salonId: id });
+    // ✅ 3. Delete all bookings
+    const deletedBookings = await Booking.deleteMany({ 
+      $or: [
+        { salon: id },
+        { salonId: id }
+      ]
+    });
     console.log(`✅ Deleted ${deletedBookings.deletedCount} bookings`);
 
-    // 4. Delete the admin user account
+    // ✅ 4. Delete queue entries (if exists)
+    try {
+      const Queue = mongoose.models.Queue || (await import('@/models/Queue')).default;
+      const deletedQueue = await Queue.deleteMany({ 
+        $or: [
+          { salon: id },
+          { salonId: id }
+        ]
+      });
+      console.log(`✅ Deleted ${deletedQueue.deletedCount} queue entries`);
+    } catch (error) {
+      console.log('⚠️ Queue model not found, skipping...');
+    }
+
+    // ✅ 5. Delete reviews (if exists)
+    try {
+      const Review = mongoose.models.Review || (await import('@/models/Review')).default;
+      const deletedReviews = await Review.deleteMany({ 
+        $or: [
+          { salon: id },
+          { salonId: id }
+        ]
+      });
+      console.log(`✅ Deleted ${deletedReviews.deletedCount} reviews`);
+    } catch (error) {
+      console.log('⚠️ Review model not found, skipping...');
+    }
+
+    // ✅ 6. Unlink users from salon
+    const unlinkedUsers = await User.updateMany(
+      { salonId: id },
+      { $unset: { salonId: "" } }
+    );
+    console.log(`✅ Unlinked ${unlinkedUsers.modifiedCount} users from salon`);
+
+    // ✅ 7. Delete the admin user
     let deletedAdmin = null;
     if (adminId) {
       deletedAdmin = await User.findByIdAndDelete(adminId);
@@ -131,7 +192,7 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    // 5. Finally delete the salon
+    // ✅ 8. Finally delete the salon
     await Salon.findByIdAndDelete(id);
     console.log('✅ Salon deleted successfully');
 
@@ -139,11 +200,12 @@ export async function DELETE(request, { params }) {
       success: true,
       message: 'Salon and all related data deleted successfully',
       deleted: {
-        salon: salon.name,
+        salonName: salon.name,
         adminEmail: deletedAdmin?.email || 'N/A',
         staff: deletedStaff.deletedCount,
         services: deletedServices.deletedCount,
         bookings: deletedBookings.deletedCount,
+        usersUnlinked: unlinkedUsers.modifiedCount
       },
     });
   } catch (error) {

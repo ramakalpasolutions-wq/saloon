@@ -1,43 +1,52 @@
 import jwt from 'jsonwebtoken';
-import bcryptjs from 'bcryptjs';
+import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+export function generateToken(payload) {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: '7d',
+  });
+}
 
-export const hashPassword = async (password) => {
-  return await bcryptjs.hash(password, 12);
-};
-
-export const comparePasswords = async (password, hashedPassword) => {
-  return await bcryptjs.compare(password, hashedPassword);
-};
-
-export const generateToken = (user) => {
-  return jwt.sign(
-    {
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-      salonId: user.salonId,
-    },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-};
-
-export const verifyToken = (token) => {
+export function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
     return null;
   }
-};
+}
 
-export const getUserFromRequest = (request) => {
+export function getUserFromRequest(request) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) return null;
-    return verifyToken(token);
+    const token = request.cookies.get('auth-token')?.value; // ✅ Use 'auth-token'
+    
+    if (!token) {
+      return null;
+    }
+
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return null;
+    }
+
+    return {
+      userId: decoded._id,
+      email: decoded.email,
+      role: decoded.role,
+      salonId: decoded.salonId,
+    };
   } catch (error) {
+    console.error('Get user from request error:', error);
     return null;
   }
-};
+}
+
+export async function hashPassword(password) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
+
+export async function comparePasswords(password, hashedPassword) {
+  return bcrypt.compare(password, hashedPassword);
+}

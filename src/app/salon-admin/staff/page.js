@@ -1,166 +1,166 @@
 'use client';
 import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/AdminLayout';
-import { useAuth } from '@/context/AuthContext';
+import SalonAdminLayout from '@/components/SalonAdminLayout';
+import { useToast } from '@/components/Toast';
 
 export default function StaffPage() {
-  const { user } = useAuth();
-  const [staff, setStaff] = useState([]);
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
+  const [staff, setStaff] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
   const [formData, setFormData] = useState({
     name: '',
-    specialty: '',
-    phone: '',
     email: '',
-    experience: '',
-    rating: 4.0,
-    workingDays: [],
-    image: null,
+    phone: '',
+    role: 'stylist',
+    specialties: '',
+    isActive: true
   });
 
   useEffect(() => {
-    if (user?.salonId) {
-      fetchStaff();
-    }
-  }, [user]);
+    fetchStaff();
+  }, []);
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch(`/api/staff?salonId=${user.salonId}`);
+      setLoading(true);
+      const response = await fetch('/api/salon-admin/staff');
       const data = await response.json();
-      setStaff(data.staff || []);
+      
+      if (data.success) {
+        setStaff(data.staff || []);
+      }
     } catch (error) {
-      console.error('Failed to fetch staff:', error);
+      console.error('Error fetching staff:', error);
+      toast.error('Failed to load staff');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setUploadingImage(true);
-    const formDataImg = new FormData();
-    formDataImg.append('file', file);
-    formDataImg.append('folder', 'staff-images');
-
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataImg,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFormData(prev => ({
-          ...prev,
-          image: { url: data.url, publicId: data.publicId }
-        }));
-      } else {
-        alert('Failed to upload image');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Error uploading image');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const url = editingStaff ? `/api/staff/${editingStaff._id}` : '/api/staff';
+      const url = '/api/salon-admin/staff';
       const method = editingStaff ? 'PUT' : 'POST';
+      const body = editingStaff 
+        ? { ...formData, staffId: editingStaff._id, specialties: formData.specialties.split(',').map(s => s.trim()).filter(Boolean) }
+        : { ...formData, specialties: formData.specialties.split(',').map(s => s.trim()).filter(Boolean) };
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body)
       });
 
-      if (response.ok) {
-        alert(editingStaff ? 'Staff updated successfully' : 'Staff added successfully');
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(editingStaff ? 'Staff updated!' : 'Staff member added!');
         setShowModal(false);
-        resetForm();
+        setEditingStaff(null);
+        setFormData({ name: '', email: '', phone: '', role: 'stylist', specialties: '', isActive: true });
         fetchStaff();
       } else {
-        alert('Failed to save staff member');
+        toast.error(data.error || 'Failed to save staff');
       }
     } catch (error) {
       console.error('Error saving staff:', error);
-      alert('Error saving staff member');
+      toast.error('Failed to save staff');
     }
   };
 
-  const handleEdit = (staffMember) => {
-    setEditingStaff(staffMember);
+  const deleteStaff = async (staffId) => {
+    if (!confirm('Are you sure you want to delete this staff member?')) return;
+
+    try {
+      const response = await fetch(`/api/salon-admin/staff?id=${staffId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Staff member deleted!');
+        fetchStaff();
+      } else {
+        toast.error(data.error || 'Failed to delete');
+      }
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast.error('Failed to delete');
+    }
+  };
+
+  const toggleStaffStatus = async (staffId, currentStatus) => {
+    try {
+      const response = await fetch('/api/salon-admin/staff', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId, isActive: !currentStatus })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Staff ${!currentStatus ? 'activated' : 'deactivated'}`);
+        fetchStaff();
+      } else {
+        toast.error(data.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const openEditModal = (member) => {
+    setEditingStaff(member);
     setFormData({
-      name: staffMember.name,
-      specialty: staffMember.specialty,
-      phone: staffMember.phone || '',
-      email: staffMember.email || '',
-      experience: staffMember.experience || '',
-      rating: staffMember.rating || 4.0,
-      workingDays: staffMember.workingDays || [],
-      image: staffMember.image || null,
+      name: member.name,
+      email: member.email || '',
+      phone: member.phone,
+      role: member.role,
+      specialties: member.specialties?.join(', ') || '',
+      isActive: member.isActive
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (staffId) => {
-    if (!confirm('Are you sure you want to delete this staff member?')) return;
-
-    try {
-      const response = await fetch(`/api/staff/${staffId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        alert('Staff member deleted');
-        fetchStaff();
-      } else {
-        alert('Failed to delete staff member');
-      }
-    } catch (error) {
-      console.error('Error deleting staff:', error);
-      alert('Error deleting staff member');
-    }
+  const getRoleIcon = (role) => {
+    const icons = {
+      stylist: '💇',
+      barber: '✂️',
+      receptionist: '📋',
+      manager: '👔'
+    };
+    return icons[role] || '👤';
   };
 
-  const resetForm = () => {
-    setEditingStaff(null);
-    setFormData({
-      name: '',
-      specialty: '',
-      phone: '',
-      email: '',
-      experience: '',
-      rating: 4.0,
-      workingDays: [],
-      image: null,
-    });
+  const getRoleColor = (role) => {
+    const colors = {
+      stylist: 'bg-purple-100 text-purple-800',
+      barber: 'bg-blue-100 text-blue-800',
+      receptionist: 'bg-green-100 text-green-800',
+      manager: 'bg-orange-100 text-orange-800'
+    };
+    return colors[role] || 'bg-gray-100 text-gray-800';
   };
 
-  const toggleWorkingDay = (day) => {
-    setFormData(prev => ({
-      ...prev,
-      workingDays: prev.workingDays.includes(day)
-        ? prev.workingDays.filter(d => d !== day)
-        : [...prev.workingDays, day]
-    }));
-  };
-
-  const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  if (loading) {
+    return (
+      <SalonAdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        </div>
+      </SalonAdminLayout>
+    );
+  }
 
   return (
-    <AdminLayout requiredRole="salon-admin">
+    <SalonAdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -170,282 +170,244 @@ export default function StaffPage() {
           </div>
           <button
             onClick={() => {
-              resetForm();
+              setEditingStaff(null);
+              setFormData({ name: '', email: '', phone: '', role: 'stylist', specialties: '', isActive: true });
               setShowModal(true);
             }}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2"
           >
-            <span className="text-xl">➕</span>
-            <span>Add Staff Member</span>
+            <span className="text-xl">+</span>
+            Add Staff
           </button>
         </div>
 
-        {/* Staff Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-                <div className="h-32 bg-gray-200 rounded mb-4"></div>
-                <div className="h-6 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Staff', value: staff.length, color: 'bg-blue-100 text-blue-800', emoji: '👥' },
+            { label: 'Active', value: staff.filter(s => s.isActive).length, color: 'bg-green-100 text-green-800', emoji: '✅' },
+            { label: 'Stylists', value: staff.filter(s => s.role === 'stylist').length, color: 'bg-purple-100 text-purple-800', emoji: '💇' },
+            { label: 'Barbers', value: staff.filter(s => s.role === 'barber').length, color: 'bg-blue-100 text-blue-800', emoji: '✂️' }
+          ].map((stat, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">{stat.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${stat.color}`}>
+                  {stat.emoji}
+                </div>
               </div>
-            ))}
-          </div>
-        ) : staff.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="text-6xl mb-4">👨‍💼</div>
-            <p className="text-gray-500 text-lg mb-4">No staff members added yet</p>
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Add Your First Staff Member
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staff.map((member) => (
-              <div key={member._id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-                {/* Image */}
-                <div className="flex justify-center mb-4">
-                  {member.image?.url ? (
-                    <img
-                      src={member.image.url}
-                      alt={member.name}
-                      className="w-32 h-32 rounded-full object-cover border-4 border-green-100"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-green-100 flex items-center justify-center text-5xl">
-                      👨‍💼
+            </div>
+          ))}
+        </div>
+
+        {/* Staff List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {staff.length > 0 ? (
+            staff.map(member => (
+              <div key={member._id} className={`bg-white rounded-xl shadow-sm border-2 p-6 transition-all ${
+                member.isActive ? 'border-green-200 hover:shadow-md' : 'border-gray-200 opacity-60'
+              }`}>
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                      {member.name.charAt(0).toUpperCase()}
                     </div>
-                  )}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{member.name}</h3>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${getRoleColor(member.role)}`}>
+                        {getRoleIcon(member.role)} {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleStaffStatus(member._id, member.isActive)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      member.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {member.isActive ? 'Active' : 'Inactive'}
+                  </button>
                 </div>
 
-                {/* Info */}
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-green-600 font-medium mb-2">{member.specialty}</p>
-                  
-                  {member.rating && (
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <svg className="h-5 w-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span className="font-semibold">{member.rating}</span>
-                    </div>
-                  )}
-
-                  {member.experience && (
-                    <p className="text-sm text-gray-600 mb-2">
-                      {member.experience} years experience
-                    </p>
-                  )}
-
-                  {member.phone && (
-                    <p className="text-sm text-gray-600">📞 {member.phone}</p>
-                  )}
-                  {member.email && (
-                    <p className="text-sm text-gray-600">📧 {member.email}</p>
-                  )}
+                {/* Contact Info */}
+                <div className="space-y-2 mb-4 text-sm">
+                  <p className="text-gray-600">📞 {member.phone}</p>
+                  {member.email && <p className="text-gray-600">✉️ {member.email}</p>}
                 </div>
 
-                {/* Working Days */}
-                {member.workingDays && member.workingDays.length > 0 && (
+                {/* Specialties */}
+                {member.specialties && member.specialties.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Working Days:</p>
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {member.workingDays.map(day => (
-                        <span key={day} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                          {day.substring(0, 3)}
+                    <p className="text-xs font-medium text-gray-500 mb-2">SPECIALTIES</p>
+                    <div className="flex flex-wrap gap-2">
+                      {member.specialties.map((specialty, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                          {specialty}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Action Buttons */}
+                {/* Rating */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className={`w-4 h-4 ${i < Math.floor(member.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {member.rating?.toFixed(1) || '0.0'} ({member.totalReviews || 0})
+                  </span>
+                </div>
+
+                {/* Actions */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleEdit(member)}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    onClick={() => openEditModal(member)}
+                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium text-sm"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(member._id)}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                    onClick={() => deleteStaff(member._id)}
+                    className="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium text-sm"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Add/Edit Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
-              </h2>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Image Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Profile Photo
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImage}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                  {uploadingImage && <p className="text-sm text-gray-500 mt-2">Uploading...</p>}
-                  {formData.image && (
-                    <img src={formData.image.url} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Specialty *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.specialty}
-                      onChange={(e) => setFormData({...formData, specialty: e.target.value})}
-                      required
-                      placeholder="e.g., Senior Stylist"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Experience (years)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.experience}
-                      onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rating
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="5"
-                      value={formData.rating}
-                      onChange={(e) => setFormData({...formData, rating: parseFloat(e.target.value)})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Working Days */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Working Days
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {weekDays.map(day => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleWorkingDay(day)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          formData.workingDays.includes(day)
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={uploadingImage}
-                    className={`flex-1 px-6 py-3 rounded-lg font-medium text-white transition-colors ${
-                      uploadingImage
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700'
-                    }`}
-                  >
-                    {editingStaff ? 'Update' : 'Add'} Staff Member
-                  </button>
-                </div>
-              </form>
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="text-6xl mb-4">👨‍💼</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No staff members yet</h3>
+              <p className="text-gray-600 mb-6">Add your first team member to get started</p>
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+              >
+                Add First Staff Member
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </AdminLayout>
+
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold mb-6">
+              {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
+            </h3>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="+91 9876543210"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="john@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                <select
+                  required
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="stylist">💇 Stylist</option>
+                  <option value="barber">✂️ Barber</option>
+                  <option value="receptionist">📋 Receptionist</option>
+                  <option value="manager">👔 Manager</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Specialties</label>
+                <input
+                  type="text"
+                  value={formData.specialties}
+                  onChange={(e) => setFormData({ ...formData, specialties: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="Haircut, Beard, Coloring (comma separated)"
+                />
+                <p className="text-xs text-gray-500 mt-1">Separate multiple specialties with commas</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                  Active (Available for bookings)
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditingStaff(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                >
+                  {editingStaff ? 'Update' : 'Add'} Staff
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </SalonAdminLayout>
   );
 }
