@@ -71,10 +71,13 @@ export default function QueueStatusPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'waiting': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'in-progress': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'pending-approval': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-300';
+      case 'rejected': return 'bg-red-100 text-red-800 border-red-300';
+      case 'waiting': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'in-progress': return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'completed': return 'bg-green-100 text-green-800 border-green-300';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-300';
+      case 'cancelled': return 'bg-gray-100 text-gray-800 border-gray-300';
       case 'no-show': return 'bg-gray-100 text-gray-800 border-gray-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -82,12 +85,29 @@ export default function QueueStatusPage() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'waiting': return '⏳';
+      case 'pending-approval': return '⏳';
+      case 'confirmed': return '✅';
+      case 'rejected': return '❌';
+      case 'waiting': return '🕐';
       case 'in-progress': return '✂️';
-      case 'completed': return '✅';
-      case 'cancelled': return '❌';
+      case 'completed': return '🎉';
+      case 'cancelled': return '🚫';
       case 'no-show': return '😕';
       default: return '📋';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'pending-approval': return 'PENDING APPROVAL';
+      case 'confirmed': return 'CONFIRMED';
+      case 'rejected': return 'REJECTED';
+      case 'waiting': return 'WAITING';
+      case 'in-progress': return 'IN PROGRESS';
+      case 'completed': return 'COMPLETED';
+      case 'cancelled': return 'CANCELLED';
+      case 'no-show': return 'NO SHOW';
+      default: return status.toUpperCase();
     }
   };
 
@@ -101,17 +121,83 @@ export default function QueueStatusPage() {
             {/* Status Header */}
             <div className="text-center mb-6 sm:mb-8">
               <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">{getStatusIcon(queueEntry.status)}</div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Queue Status</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Booking Status</h1>
               <span className={`inline-block px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold border-2 text-sm sm:text-base ${getStatusColor(queueEntry.status)}`}>
-                {queueEntry.status.toUpperCase()}
+                {getStatusText(queueEntry.status)}
               </span>
             </div>
 
-            {/* Queue Position Card - Only for waiting */}
-            {queueEntry.status === 'waiting' && (
+            {/* ✅ PENDING APPROVAL STATUS */}
+            {queueEntry.status === 'pending-approval' && (
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6 text-center mb-6">
+                <div className="text-5xl mb-3">⏳</div>
+                <h3 className="text-xl font-bold text-yellow-900 mb-2">
+                  Waiting for Salon Approval
+                </h3>
+                <p className="text-yellow-800 mb-3">
+                  Your booking is being reviewed by the salon. You'll be notified once approved.
+                </p>
+                {queueEntry.paymentStatus === 'paid' && (
+                  <div className="bg-yellow-100 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-yellow-900 font-semibold">
+                      ✅ Payment received: ₹{queueEntry.amount}
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Full refund if booking is rejected
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ✅ CONFIRMED STATUS */}
+            {queueEntry.status === 'confirmed' && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center mb-6">
+                <div className="text-5xl mb-3">✅</div>
+                <h3 className="text-xl font-bold text-green-900 mb-2">
+                  Booking Confirmed!
+                </h3>
+                <p className="text-green-800 mb-3">
+                  Your booking has been approved by the salon.
+                </p>
+                <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-lg p-6 text-white">
+                  <p className="text-lg mb-2">Your Queue Number</p>
+                  <p className="text-5xl font-bold mb-2">#{queueEntry.queueNumber}</p>
+                  <p className="text-lg">
+                    Wait Time: <span className="font-bold">{queueEntry.estimatedWaitTime} min</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ REJECTED STATUS */}
+            {queueEntry.status === 'rejected' && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 text-center mb-6">
+                <div className="text-5xl mb-3">❌</div>
+                <h3 className="text-xl font-bold text-red-900 mb-2">
+                  Booking Rejected
+                </h3>
+                <p className="text-red-800 mb-3">
+                  {queueEntry.rejectionReason || 'Sorry, the salon cannot accommodate this booking.'}
+                </p>
+                {queueEntry.paymentStatus === 'paid' && (
+                  <div className="bg-red-100 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-red-900 font-semibold">
+                      💰 Refund Amount: ₹{queueEntry.amount}
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Will be processed within 5-7 business days
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Queue Position Card - Only for confirmed/waiting */}
+            {(queueEntry.status === 'waiting' || queueEntry.status === 'confirmed') && (
               <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-lg sm:rounded-xl p-6 sm:p-8 text-white text-center mb-4 sm:mb-6">
                 <p className="text-base sm:text-lg mb-2">Your Position</p>
-                <p className="text-5xl sm:text-6xl font-bold mb-2">#{queueEntry.queueNumber || queueEntry.position}</p>
+                <p className="text-5xl sm:text-6xl font-bold mb-2">#{queueEntry.queueNumber}</p>
                 <p className="text-base sm:text-lg">
                   Wait: <span className="font-bold">{queueEntry.estimatedWaitTime} min</span>
                 </p>
@@ -128,7 +214,7 @@ export default function QueueStatusPage() {
                     <p className="text-xs sm:text-sm text-gray-600">Salon</p>
                     <p className="font-bold text-gray-900 text-base sm:text-lg truncate">{queueEntry.salon.name}</p>
                     {queueEntry.salon.address && (
-                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">📍 {queueEntry.salon.address}, {queueEntry.salon.city}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">📍 {queueEntry.salon.address}</p>
                     )}
                     {queueEntry.salon.phone && (
                       <p className="text-xs sm:text-sm text-gray-600">📞 {queueEntry.salon.phone}</p>
@@ -165,9 +251,6 @@ export default function QueueStatusPage() {
                     {queueEntry.staff.specialization && (
                       <p className="text-xs sm:text-sm text-gray-600 truncate">🎯 {queueEntry.staff.specialization}</p>
                     )}
-                    {queueEntry.staff.experience && (
-                      <p className="text-xs text-gray-500">⭐ {queueEntry.staff.experience} years exp</p>
-                    )}
                   </div>
                 </div>
               )}
@@ -197,7 +280,7 @@ export default function QueueStatusPage() {
               <div className="flex items-start gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
                 <span className="text-xl sm:text-2xl flex-shrink-0">🕐</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600">Checked In At</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Booked At</p>
                   <p className="font-bold text-sm sm:text-base text-gray-900">
                     {new Date(queueEntry.checkInTime).toLocaleString('en-IN', {
                       dateStyle: 'medium',
@@ -247,9 +330,12 @@ export default function QueueStatusPage() {
                     <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm ${
                       queueEntry.paymentStatus === 'paid'
                         ? 'bg-green-100 text-green-800'
+                        : queueEntry.paymentStatus === 'refunded'
+                        ? 'bg-purple-100 text-purple-800'
                         : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {queueEntry.paymentStatus === 'paid' ? '✅ Paid' : '⏳ Pending'}
+                      {queueEntry.paymentStatus === 'paid' ? '✅ Paid' : 
+                       queueEntry.paymentStatus === 'refunded' ? '💰 Refunded' : '⏳ Pending'}
                     </span>
                   </div>
                 </div>
@@ -257,7 +343,7 @@ export default function QueueStatusPage() {
             )}
 
             {/* Status Messages */}
-            {queueEntry.status === 'waiting' && (
+            {(queueEntry.status === 'pending-approval' || queueEntry.status === 'confirmed' || queueEntry.status === 'waiting') && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 text-center">
                 <p className="text-xs sm:text-sm text-blue-800">
                   <span className="font-semibold">Auto-refreshing</span> - Updates every 30 seconds
@@ -286,7 +372,7 @@ export default function QueueStatusPage() {
               href={`/my-checkins?phone=${encodeURIComponent(queueEntry.customerPhone)}`}
               className="block w-full py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg sm:rounded-xl font-semibold text-center hover:bg-blue-700 transition-all shadow-sm hover:shadow-md text-sm sm:text-base"
             >
-              📋 View All My Check-ins
+              📋 View All My Bookings
             </Link>
 
             <Link

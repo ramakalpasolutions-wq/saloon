@@ -20,6 +20,7 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         stats: {
+          pendingApprovals: 0, // ✅ ADDED
           totalQueue: 0,
           averageWait: 0,
           todayCheckIns: 0,
@@ -31,9 +32,16 @@ export async function GET() {
     const salonId = auth.salonId;
     console.log('✅ Dashboard: Using salonId:', salonId);
 
+    // ✅ GET PENDING APPROVALS COUNT
+    const pendingApprovals = await Queue.countDocuments({
+      salon: salonId,
+      status: 'pending-approval'
+    });
+
+    // Get current queue count (only confirmed/waiting)
     const totalQueue = await Queue.countDocuments({
       salon: salonId,
-      status: 'waiting'
+      status: { $in: ['confirmed', 'waiting'] } // ✅ UPDATED
     });
 
     const today = new Date();
@@ -44,14 +52,17 @@ export async function GET() {
       checkInTime: { $gte: today }
     });
 
+    // Calculate average wait time
     const averageWait = totalQueue > 0 ? Math.floor(totalQueue * 15) : 0;
 
+    // Calculate today's revenue (only paid bookings)
     const revenueResult = await Queue.aggregate([
       {
         $match: {
           salon: salonId,
           checkInTime: { $gte: today },
-          status: { $in: ['completed', 'in-progress'] }
+          paymentStatus: 'paid', // ✅ UPDATED - Only paid bookings
+          status: { $in: ['completed', 'in-progress', 'confirmed', 'waiting'] }
         }
       },
       {
@@ -64,9 +75,17 @@ export async function GET() {
 
     const todayRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
+    console.log('📊 Dashboard stats:', {
+      pendingApprovals,
+      totalQueue,
+      todayCheckIns,
+      todayRevenue
+    });
+
     return NextResponse.json({
       success: true,
       stats: {
+        pendingApprovals, // ✅ ADDED
         totalQueue,
         averageWait,
         todayCheckIns,
@@ -79,6 +98,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       stats: {
+        pendingApprovals: 0, // ✅ ADDED
         totalQueue: 0,
         averageWait: 0,
         todayCheckIns: 0,

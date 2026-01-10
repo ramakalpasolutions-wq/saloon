@@ -9,6 +9,7 @@ export default function SalonAdminLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0); // ✅ NEW
 
   useEffect(() => {
     checkAuth();
@@ -17,6 +18,16 @@ export default function SalonAdminLayout({ children }) {
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
+
+  // ✅ NEW - Fetch pending count
+  useEffect(() => {
+    if (user) {
+      fetchPendingCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchPendingCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const checkAuth = async () => {
     try {
@@ -42,6 +53,19 @@ export default function SalonAdminLayout({ children }) {
     }
   };
 
+  // ✅ NEW - Fetch pending approvals count
+  const fetchPendingCount = async () => {
+    try {
+      const response = await fetch('/api/salon-admin/dashboard');
+      const data = await response.json();
+      if (data.success && data.stats) {
+        setPendingCount(data.stats.pendingApprovals || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending count:', error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -62,8 +86,10 @@ export default function SalonAdminLayout({ children }) {
     );
   }
 
+  // ✅ UPDATED - Added pending approvals
   const navItems = [
     { href: '/salon-admin', icon: '📊', label: 'Dashboard' },
+    { href: '/salon-admin/pending', icon: '⏳', label: 'Pending Approvals', badge: pendingCount }, // ✅ NEW
     { href: '/salon-admin/queue', icon: '👥', label: 'Queue' },
     { href: '/salon-admin/bookings', icon: '📅', label: 'Bookings' },
     { href: '/salon-admin/services', icon: '✂️', label: 'Services' },
@@ -92,12 +118,25 @@ export default function SalonAdminLayout({ children }) {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
             <h2 className="text-base sm:text-lg font-bold text-white">Salon Admin</h2>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            {/* ✅ NEW - Pending badge in header */}
+            {pendingCount > 0 && (
+              <Link
+                href="/salon-admin/pending"
+                className="relative px-3 py-1.5 bg-yellow-500 text-white rounded-lg font-bold text-sm hover:bg-yellow-600 transition-all"
+              >
+                <span className="flex items-center gap-1">
+                  ⏳ {pendingCount}
+                </span>
+              </Link>
+            )}
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -134,14 +173,22 @@ export default function SalonAdminLayout({ children }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                   isActive 
                     ? 'bg-white text-green-700 shadow-md' 
                     : 'text-white hover:bg-green-800/50'
                 }`}
               >
-                <span className="text-2xl">{item.icon}</span>
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{item.icon}</span>
+                  <span>{item.label}</span>
+                </div>
+                {/* ✅ NEW - Badge for pending count */}
+                {item.badge && item.badge > 0 && (
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-bold min-w-[24px] text-center">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -186,11 +233,11 @@ export default function SalonAdminLayout({ children }) {
           <div className="px-4 py-4 bg-green-800/30 border-b border-green-500">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold">
-                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'J'}
+                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{user.name || 'John Doe'}</p>
-                <p className="text-xs text-green-200 truncate">{user.email || 'john@glamour.com'}</p>
+                <p className="text-sm font-semibold text-white truncate">{user.name || 'Admin'}</p>
+                <p className="text-xs text-green-200 truncate">{user.email}</p>
               </div>
             </div>
           </div>
@@ -204,14 +251,22 @@ export default function SalonAdminLayout({ children }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                   isActive 
                     ? 'bg-white text-green-700 shadow-md' 
                     : 'text-white hover:bg-green-800/50'
                 }`}
               >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-sm">{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-sm">{item.label}</span>
+                </div>
+                {/* ✅ NEW - Badge for pending count */}
+                {item.badge && item.badge > 0 && (
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-bold min-w-[20px] text-center">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

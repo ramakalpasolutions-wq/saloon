@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Queue from '@/models/Queue';
-import { getServerSession } from 'next-auth';
+import { verifySalonAdmin } from '@/lib/salonAuth';
 
 export async function POST(request) {
   try {
-    await connectDB();
-
-    // ✅ Check if user is salon admin (add your auth logic)
-    const session = await getServerSession();
-    if (!session?.user) {
+    const auth = await verifySalonAdmin();
+    if (auth.error) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+
+    await connectDB();
 
     const { queueId, action, rejectionReason } = await request.json();
 
@@ -25,12 +24,22 @@ export async function POST(request) {
       );
     }
 
+    console.log(`📋 ${action} booking:`, queueId);
+
     const queueEntry = await Queue.findById(queueId);
 
     if (!queueEntry) {
       return NextResponse.json(
         { success: false, error: 'Booking not found' },
         { status: 404 }
+      );
+    }
+
+    // Verify booking belongs to this salon
+    if (queueEntry.salon.toString() !== auth.salonId.toString()) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 403 }
       );
     }
 
@@ -44,13 +53,15 @@ export async function POST(request) {
     if (action === 'approve') {
       // ✅ APPROVE BOOKING
       queueEntry.status = 'confirmed';
-      queueEntry.approvedBy = session.user.id;
+      queueEntry.approvedBy = auth.userId; // If you have user ID in auth
       queueEntry.approvedAt = new Date();
       
       await queueEntry.save();
 
+      console.log('✅ Booking approved:', queueId);
+
       // ✅ TODO: Send SMS/Email notification to customer
-      // sendApprovalNotification(queueEntry);
+      // await sendApprovalNotification(queueEntry);
 
       return NextResponse.json({
         success: true,
@@ -61,15 +72,22 @@ export async function POST(request) {
     } else if (action === 'reject') {
       // ✅ REJECT BOOKING
       queueEntry.status = 'rejected';
-      queueEntry.rejectionReason = rejectionReason || 'No slots available';
-      queueEntry.approvedBy = session.user.id;
+      queueEntry.rejectionReason = rejectionReason || 'Booking not available';
+      queueEntry.approvedBy = auth.userId;
       queueEntry.approvedAt = new Date();
       
       await queueEntry.save();
 
-      // ✅ TODO: Refund payment if already paid
+      console.log('❌ Booking rejected:', queueId);
+
+      // ✅ TODO: Initiate refund if payment was made
+      if (queueEntry.paymentStatus === 'paid') {
+        console.log('💰 Refund needed for:', queueEntry.razorpayPaymentId);
+        // await initiateRefund(queueEntry);
+      }
+
       // ✅ TODO: Send rejection notification
-      // sendRejectionNotification(queueEntry);
+      // await sendRejectionNotification(queueEntry);
 
       return NextResponse.json({
         success: true,

@@ -23,10 +23,14 @@ const QueueSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Salon',
     required: true,
-    index: true // ✅ This creates index 1
+    index: true
   },
   
   // Service Details
+  services: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service'
+  }],
   service: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Service'
@@ -62,19 +66,28 @@ const QueueSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Status
+  // ✅ UPDATED STATUS - Added approval statuses
   status: {
     type: String,
-    enum: ['waiting', 'in-progress', 'completed', 'cancelled', 'no-show'],
-    default: 'waiting',
-    index: true // ✅ This creates index 2
+    enum: [
+      'pending-approval',  // ✅ NEW - Waiting for salon approval
+      'confirmed',         // ✅ NEW - Approved by salon
+      'rejected',          // ✅ NEW - Rejected by salon
+      'waiting',           // In queue
+      'in-progress',       // Service started
+      'completed',         // Service done
+      'cancelled',         // Cancelled
+      'no-show'            // Didn't show up
+    ],
+    default: 'pending-approval', // ✅ CHANGED - Start with pending
+    index: true
   },
   
   // Timestamps
   checkInTime: {
     type: Date,
     default: Date.now,
-    index: true // ✅ This creates index 3
+    index: true
   },
   startTime: {
     type: Date
@@ -97,25 +110,22 @@ const QueueSchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed', 'refunded'],
-    default: 'pending',
-    // ❌ REMOVE THIS LINE - It's the duplicate!
-    // index: true  // <-- DELETE THIS LINE
+    default: 'pending'
   },
   paymentMethod: {
     type: String,
     enum: ['cash', 'upi', 'card', 'netbanking', 'wallet'],
     default: 'cash'
   },
-  // ✅ Razorpay Payment IDs
   razorpayOrderId: {
     type: String,
     trim: true,
-    sparse: true // ✅ Add sparse for optional fields
+    sparse: true
   },
   razorpayPaymentId: {
     type: String,
     trim: true,
-    sparse: true // ✅ Add sparse for optional fields
+    sparse: true
   },
   razorpaySignature: {
     type: String,
@@ -123,6 +133,19 @@ const QueueSchema = new mongoose.Schema({
   },
   paidAt: {
     type: Date
+  },
+  
+  // ✅ APPROVAL FIELDS
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  approvedAt: {
+    type: Date
+  },
+  rejectionReason: {
+    type: String,
+    trim: true
   },
   
   // Notifications
@@ -141,18 +164,17 @@ const QueueSchema = new mongoose.Schema({
 });
 
 // ✅ OPTIMIZED COMPOUND INDEXES
-QueueSchema.index({ salon: 1, status: 1, checkInTime: -1 }); // Query by salon + status + time
-QueueSchema.index({ salon: 1, queueNumber: 1 }); // Query by salon + queue number
-QueueSchema.index({ customerPhone: 1, salon: 1 }); // Query by customer phone
-QueueSchema.index({ appointmentDate: 1, appointmentTime: 1 }); // Query by appointment
-QueueSchema.index({ salon: 1, paymentStatus: 1 }); // ✅ CHANGED: Compound index instead of single
-// ❌ REMOVED: QueueSchema.index({ paymentStatus: 1 }); // Delete this duplicate line
+QueueSchema.index({ salon: 1, status: 1, checkInTime: -1 });
+QueueSchema.index({ salon: 1, queueNumber: 1 });
+QueueSchema.index({ customerPhone: 1, salon: 1 });
+QueueSchema.index({ appointmentDate: 1, appointmentTime: 1 });
+QueueSchema.index({ salon: 1, paymentStatus: 1 });
 
 // Method to get position in queue
 QueueSchema.methods.getQueuePosition = async function() {
   const count = await this.model('Queue').countDocuments({
     salon: this.salon,
-    status: 'waiting',
+    status: { $in: ['confirmed', 'waiting'] }, // ✅ Only count confirmed bookings
     queueNumber: { $lt: this.queueNumber }
   });
   return count + 1;

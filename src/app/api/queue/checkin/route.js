@@ -1,14 +1,34 @@
-import { NextResponse } from 'next/server';  // ✅ ADD THIS
-import connectDB from '@/lib/mongodb';  // ✅ ADD THIS
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
 import Queue from '@/models/Queue';
 
 export async function POST(request) {
   try {
     await connectDB();
 
-    const { salonId, customerName, customerPhone, services, appointmentDate, appointmentTime, staffId } = await request.json();
+    const {
+      salonId,
+      customerName,
+      customerPhone,
+      services,
+      appointmentDate,
+      appointmentTime,
+      staffId,
+      amount,
+      paymentStatus
+    } = await request.json();
 
-    console.log('📋 Check-in request:', { salonId, customerName, customerPhone, services, appointmentDate, appointmentTime, staffId });
+    console.log('📋 Check-in request:', {
+      salonId,
+      customerName,
+      customerPhone,
+      services,
+      appointmentDate,
+      appointmentTime,
+      staffId,
+      amount,
+      paymentStatus
+    });
 
     // Validate required fields
     if (!salonId || !customerName || !customerPhone || !services || services.length === 0) {
@@ -26,52 +46,49 @@ export async function POST(request) {
       );
     }
 
-    // Get next queue number for this salon
-    const queueNumber = await Queue.getNextQueueNumber(salonId);
+    // Get next queue number for this date
+    const queueNumber = await Queue.getNextQueueNumberForDate(salonId, appointmentDate);
 
-    // Get current queue count for estimated wait time
-    const queueCount = await Queue.countDocuments({
-      salon: salonId,
-      status: 'waiting'
-    });
+    // Estimate wait time based on services
+    const estimatedWaitTime = services.length * 30; // 30 min per service
 
-    const estimatedWaitTime = queueCount * 15;
-
-    // Create queue entry with all fields
+    // ✅ CREATE WITH PENDING-APPROVAL STATUS
     const queueEntry = await Queue.create({
       salon: salonId,
       customerName,
       customerPhone,
-      service: services[0],  // First service
-      staff: staffId || null,  // Staff (optional)
+      services: services, // Array of service IDs
+      service: services[0], // First service for compatibility
+      staff: staffId || null,
       queueNumber,
       estimatedWaitTime,
-      status: 'waiting',
+      status: 'pending-approval', // ✅ Wait for salon approval
       appointmentDate,
       appointmentTime,
+      amount: amount || 0,
+      paymentStatus: paymentStatus || 'pending',
+      checkInTime: new Date(),
     });
 
-    console.log('✅ Queue entry created:', queueEntry);
+    console.log('✅ Queue entry created:', queueEntry._id);
+
+    // Populate the entry with related data
+    const populatedEntry = await Queue.findById(queueEntry._id)
+      .populate('salon', 'name address phone')
+      .populate('services', 'name price duration')
+      .populate('staff', 'name specialization')
+      .lean();
 
     return NextResponse.json({
       success: true,
-      message: 'Checked in successfully',
-      queueEntry: {
-        _id: queueEntry._id,
-        position: queueEntry.queueNumber,
-        queueNumber: queueEntry.queueNumber,
-        estimatedWaitTime: queueEntry.estimatedWaitTime,
-        status: queueEntry.status,
-        appointmentDate,
-        appointmentTime,
-        staffId,
-      },
+      message: 'Booking submitted! Waiting for salon approval.',
+      queueEntry: populatedEntry,
     });
 
   } catch (error) {
     console.error('❌ Check-in error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to check in', message: error.message },
+      { success: false, error: 'Failed to create booking', message: error.message },
       { status: 500 }
     );
   }

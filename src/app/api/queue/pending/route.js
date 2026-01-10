@@ -1,32 +1,35 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Queue from '@/models/Queue';
-import { getServerSession } from 'next-auth';
+import { verifySalonAdmin } from '@/lib/salonAuth';
 
 export async function GET(request) {
   try {
-    await connectDB();
-
-    // Get salon from session or query
-    const { searchParams } = new URL(request.url);
-    const salonId = searchParams.get('salonId');
-
-    if (!salonId) {
+    const auth = await verifySalonAdmin();
+    if (auth.error) {
       return NextResponse.json(
-        { success: false, error: 'Salon ID required' },
-        { status: 400 }
+        { success: false, error: auth.error },
+        { status: auth.status }
       );
     }
+
+    await connectDB();
+
+    const salonId = auth.salonId;
+
+    console.log('📋 Fetching pending bookings for salon:', salonId);
 
     // ✅ GET ALL PENDING APPROVALS
     const pendingBookings = await Queue.find({
       salon: salonId,
       status: 'pending-approval',
     })
-      .populate('services', 'name price duration')
-      .populate('staff', 'name specialization')
+      .populate('services', 'name price duration category')
+      .populate('staff', 'name specialization experience')
       .sort({ checkInTime: -1 })
       .lean();
+
+    console.log(`✅ Found ${pendingBookings.length} pending bookings`);
 
     return NextResponse.json({
       success: true,

@@ -10,7 +10,8 @@ export default function SalonAdminDashboard() {
     totalQueue: 0,
     averageWait: 0,
     todayCheckIns: 0,
-    todayRevenue: 0
+    todayRevenue: 0,
+    pendingApprovals: 0 // ✅ NEW
   });
 
   useEffect(() => {
@@ -60,8 +61,51 @@ export default function SalonAdminDashboard() {
           <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Welcome to your salon admin panel</p>
         </div>
 
+        {/* ✅ PENDING APPROVALS ALERT */}
+        {stats.pendingApprovals > 0 && (
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">⏳</div>
+              <div className="flex-1">
+                <h3 className="text-lg sm:text-xl font-bold text-yellow-900 mb-1">
+                  {stats.pendingApprovals} Booking{stats.pendingApprovals !== 1 ? 's' : ''} Awaiting Approval
+                </h3>
+                <p className="text-sm text-yellow-800 mb-3">
+                  You have pending booking requests that need your approval.
+                </p>
+                <button
+                  onClick={() => router.push('/salon-admin/pending')}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-semibold text-sm transition-all"
+                >
+                  Review Now →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          {/* ✅ NEW CARD - Pending Approvals */}
+          <div 
+            onClick={() => router.push('/salon-admin/pending')}
+            className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 border-2 border-yellow-200 hover:border-yellow-400 cursor-pointer transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Pending Approvals</p>
+                <p className="text-2xl sm:text-3xl font-bold text-yellow-600 mt-1 sm:mt-2">
+                  {stats.pendingApprovals}
+                </p>
+              </div>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -103,32 +147,32 @@ export default function SalonAdminDashboard() {
               </div>
             </div>
           </div>
-
-          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Today's Revenue</p>
-                <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">₹{stats.todayRevenue}</p>
-              </div>
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Quick Actions */}
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            {/* ✅ NEW - Pending Approvals Button */}
+            <button
+              onClick={() => router.push('/salon-admin/pending')}
+              className="p-3 sm:p-4 border-2 border-yellow-300 bg-yellow-50 rounded-lg hover:border-yellow-500 hover:bg-yellow-100 transition-all text-center relative"
+            >
+              {stats.pendingApprovals > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                  {stats.pendingApprovals}
+                </span>
+              )}
+              <div className="text-2xl sm:text-3xl mb-2">⏳</div>
+              <div className="font-semibold text-gray-900 text-xs sm:text-sm">Pending</div>
+            </button>
+
             <button
               onClick={() => router.push('/salon-admin/queue')}
               className="p-3 sm:p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-center"
             >
               <div className="text-2xl sm:text-3xl mb-2">👥</div>
-              <div className="font-semibold text-gray-900 text-xs sm:text-sm">Manage Queue</div>
+              <div className="font-semibold text-gray-900 text-xs sm:text-sm">Queue</div>
             </button>
 
             <button
@@ -148,7 +192,7 @@ export default function SalonAdminDashboard() {
             </button>
 
             <button
-              onClick={() => router.push('/salon-admin/settings')}
+              onClick={() => router.push('/salon-admin/profile')}
               className="p-3 sm:p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-center"
             >
               <div className="text-2xl sm:text-3xl mb-2">⚙️</div>
