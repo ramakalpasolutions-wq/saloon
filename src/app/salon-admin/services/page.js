@@ -42,10 +42,7 @@ export default function ServicesPage() {
     e.preventDefault();
 
     try {
-      const url = editingService 
-        ? '/api/salon-admin/services'
-        : '/api/salon-admin/services';
-      
+      const url = '/api/salon-admin/services';
       const method = editingService ? 'PUT' : 'POST';
       const body = editingService 
         ? { ...formData, serviceId: editingService._id }
@@ -112,7 +109,7 @@ export default function ServicesPage() {
     return (
       <SalonAdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
         </div>
       </SalonAdminLayout>
     );
@@ -120,12 +117,12 @@ export default function ServicesPage() {
 
   return (
     <SalonAdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Services</h1>
-            <p className="text-gray-600 mt-2">Manage your salon services and pricing</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Services</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage your salon services and pricing</p>
           </div>
           <button
             onClick={() => {
@@ -133,55 +130,55 @@ export default function ServicesPage() {
               setFormData({ name: '', description: '', price: '', duration: '', category: '' });
               setShowModal(true);
             }}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2"
+            className="w-full sm:w-auto px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            <span className="text-xl">+</span>
+            <span className="text-lg sm:text-xl">+</span>
             Add Service
           </button>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {services.length > 0 ? (
             services.map(service => (
-              <div key={service._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-2xl">
+              <div key={service._id} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-xl sm:text-2xl">
                     ✂️
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => openEditModal(service)}
-                      className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                      className="p-1.5 sm:p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => deleteService(service._id)}
-                      className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                      className="p-1.5 sm:p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
                     >
                       🗑️
                     </button>
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{service.name}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 truncate">{service.name}</h3>
                 {service.description && (
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{service.description}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">{service.description}</p>
                 )}
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 text-sm">Price</span>
-                    <span className="text-green-600 font-bold text-lg">₹{service.price}</span>
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-gray-600">Price</span>
+                    <span className="text-green-600 font-bold text-base sm:text-lg">₹{service.price}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 text-sm">Duration</span>
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-gray-600">Duration</span>
                     <span className="text-gray-900 font-semibold">{service.duration} min</span>
                   </div>
                   {service.category && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 text-sm">Category</span>
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-gray-600">Category</span>
                       <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
                         {service.category}
                       </span>
@@ -191,13 +188,13 @@ export default function ServicesPage() {
               </div>
             ))
           ) : (
-            <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-6xl mb-4">✂️</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No services yet</h3>
-              <p className="text-gray-600 mb-6">Add your first service to get started</p>
+            <div className="col-span-full bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+              <div className="text-5xl sm:text-6xl mb-4">✂️</div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No services yet</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">Add your first service to get started</p>
               <button
                 onClick={() => setShowModal(true)}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm sm:text-base"
               >
                 Add First Service
               </button>
@@ -209,69 +206,69 @@ export default function ServicesPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold mb-6">
+          <div className="bg-white rounded-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
               {editingService ? 'Edit Service' : 'Add New Service'}
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Service Name *</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Service Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base text-gray-900"
                   placeholder="e.g., Haircut, Shave, Beard Trim"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base text-gray-900"
                   placeholder="Brief description of the service"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
                   <input
                     type="number"
                     required
                     min="0"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base text-gray-900"
                     placeholder="500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (min) *</label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Duration (min) *</label>
                   <input
                     type="number"
                     required
                     min="5"
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base text-gray-900"
                     placeholder="30"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base text-gray-900"
                 >
                   <option value="">Select category</option>
                   <option value="Hair">Hair</option>
@@ -283,20 +280,20 @@ export default function ServicesPage() {
                 </select>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setEditingService(null);
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium text-sm sm:text-base"
                 >
                   {editingService ? 'Update' : 'Add'} Service
                 </button>

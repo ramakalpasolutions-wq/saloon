@@ -7,7 +7,7 @@ export default function QueueManagementPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState([]);
-  const [filter, setFilter] = useState('waiting'); // waiting, in-progress, completed, all
+  const [filter, setFilter] = useState('waiting');
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function QueueManagementPage() {
     return (
       <SalonAdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
         </div>
       </SalonAdminLayout>
     );
@@ -114,25 +114,25 @@ export default function QueueManagementPage() {
 
   return (
     <SalonAdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Queue Management</h1>
-            <p className="text-gray-600 mt-2">Manage customer queue and wait times</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Queue Management</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage customer queue and wait times</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center gap-2"
+            className="w-full sm:w-auto px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            <span className="text-xl">+</span>
+            <span className="text-lg sm:text-xl">+</span>
             Add Customer
           </button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex gap-2 overflow-x-auto">
+        <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6">
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
             {[
               { value: 'all', label: 'All', emoji: '📋', count: queue.length },
               { value: 'waiting', label: 'Waiting', emoji: '⏳', count: queue.filter(q => q.status === 'waiting').length },
@@ -142,14 +142,14 @@ export default function QueueManagementPage() {
               <button
                 key={tab.value}
                 onClick={() => setFilter(tab.value)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-xs sm:text-sm ${
                   filter === tab.value
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 <span>{tab.emoji}</span>
-                <span>{tab.label}</span>
+                <span className="hidden xs:inline">{tab.label}</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                   filter === tab.value ? 'bg-white/20' : 'bg-gray-200'
                 }`}>
@@ -161,28 +161,28 @@ export default function QueueManagementPage() {
         </div>
 
         {/* Queue List */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {queue.length > 0 ? (
             queue.map((item, index) => (
-              <div key={item._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-start justify-between gap-6">
+              <div key={item._id} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 lg:gap-6">
                   {/* Customer Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold flex-shrink-0">
                         #{item.queueNumber}
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">{item.customerName}</h3>
-                        <p className="text-gray-600">📞 {item.customerPhone}</p>
-                        {item.customerEmail && <p className="text-gray-600 text-sm">✉️ {item.customerEmail}</p>}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{item.customerName}</h3>
+                        <p className="text-sm sm:text-base text-gray-600 truncate">📞 {item.customerPhone}</p>
+                        {item.customerEmail && <p className="text-xs sm:text-sm text-gray-600 truncate">✉️ {item.customerEmail}</p>}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Service</p>
-                        <p className="text-gray-900 font-semibold">{item.serviceName || 'Walk-in'}</p>
+                        <p className="text-gray-900 font-semibold truncate">{item.serviceName || 'Walk-in'}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Wait Time</p>
@@ -199,33 +199,33 @@ export default function QueueManagementPage() {
                       </div>
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Status</p>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(item.status)}`}>
+                        <span className={`inline-block px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-bold border ${getStatusColor(item.status)}`}>
                           {item.status.replace('-', ' ').toUpperCase()}
                         </span>
                       </div>
                     </div>
 
                     {item.notes && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-700">📝 {item.notes}</p>
+                      <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs sm:text-sm text-gray-700 break-words">📝 {item.notes}</p>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-row lg:flex-col gap-2 flex-wrap lg:flex-nowrap">
                     {getStatusActions(item).map(action => (
                       <button
                         key={action.status}
                         onClick={() => updateQueueStatus(item._id, action.status)}
-                        className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${action.color}`}
+                        className={`flex-1 lg:flex-none px-3 py-2 sm:px-4 sm:py-2 rounded-lg text-white font-medium transition-colors text-xs sm:text-sm whitespace-nowrap ${action.color}`}
                       >
                         {action.label}
                       </button>
                     ))}
                     <button
                       onClick={() => deleteQueueItem(item._id)}
-                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium"
+                      className="flex-1 lg:flex-none px-3 py-2 sm:px-4 sm:py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium text-xs sm:text-sm whitespace-nowrap"
                     >
                       Remove
                     </button>
@@ -234,13 +234,13 @@ export default function QueueManagementPage() {
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No customers in queue</h3>
-              <p className="text-gray-600 mb-6">Add customers to start managing your queue</p>
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+              <div className="text-5xl sm:text-6xl mb-4">🎯</div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No customers in queue</h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">Add customers to start managing your queue</p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm sm:text-base"
               >
                 Add First Customer
               </button>
@@ -249,15 +249,15 @@ export default function QueueManagementPage() {
         </div>
       </div>
 
-      {/* Add Customer Modal - Simple version for now */}
+      {/* Add Customer Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold mb-4">Add Customer to Queue</h3>
-            <p className="text-gray-600 mb-6">Feature coming soon! Use the public check-in page for now.</p>
+          <div className="bg-white rounded-xl max-w-md w-full p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Add Customer to Queue</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Feature coming soon! Use the public check-in page for now.</p>
             <button
               onClick={() => setShowAddModal(false)}
-              className="w-full px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+              className="w-full px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm sm:text-base"
             >
               Close
             </button>
