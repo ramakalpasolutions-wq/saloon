@@ -3,10 +3,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import PaymentModal from '@/components/PaymentModal';
+import { useToast } from '@/components/Toast'; // ✅ ADDED
 
 export default function SalonDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast(); // ✅ ADDED
+  
   const [salon, setSalon] = useState(null);
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -18,9 +22,12 @@ export default function SalonDetailPage() {
   const [appointmentTime, setAppointmentTime] = useState('');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [checkingIn, setCheckingIn] = useState(false);
-  const [dateTimeError, setDateTimeError] = useState(''); // ✅ NEW
+  const [dateTimeError, setDateTimeError] = useState('');
+  
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [checkinData, setCheckinData] = useState(null);
+  const [paymentRequired, setPaymentRequired] = useState(true);
 
-  // ✅ Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -29,7 +36,6 @@ export default function SalonDetailPage() {
     return `${year}-${month}-${day}`;
   };
 
-  // ✅ Get current time in HH:MM format
   const getCurrentTime = () => {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -37,15 +43,13 @@ export default function SalonDetailPage() {
     return `${hours}:${minutes}`;
   };
 
-  // ✅ Check if selected date is today
   const isToday = (date) => {
     return date === getTodayDate();
   };
 
-  // ✅ Validate date and time
   const validateDateTime = (date, time) => {
     if (!date || !time) {
-      return true; // Allow empty for now
+      return true;
     }
 
     const now = new Date();
@@ -53,13 +57,11 @@ export default function SalonDetailPage() {
     const [hours, minutes] = time.split(':').map(Number);
     selected.setHours(hours, minutes, 0, 0);
 
-    // Check if selected datetime is in the past
     if (selected < now) {
       setDateTimeError('⚠️ Cannot select past date/time');
       return false;
     }
 
-    // Check if it's at least 15 minutes from now
     const minFutureTime = new Date(now.getTime() + 15 * 60000);
     if (selected < minFutureTime) {
       setDateTimeError('⚠️ Please select a time at least 15 minutes from now');
@@ -70,7 +72,6 @@ export default function SalonDetailPage() {
     return true;
   };
 
-  // ✅ Generate time slots (filtered for today)
   const generateTimeSlots = () => {
     const slots = [];
     const now = new Date();
@@ -80,7 +81,6 @@ export default function SalonDetailPage() {
 
     for (let hour = 9; hour <= 21; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        // Skip past times if date is today
         if (selectedIsToday) {
           if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
             continue;
@@ -95,12 +95,10 @@ export default function SalonDetailPage() {
     return slots;
   };
 
-  // ✅ Handle date change
   const handleDateChange = (e) => {
     const newDate = e.target.value;
     setAppointmentDate(newDate);
     
-    // If selecting today and current time is past selected time, clear time
     if (isToday(newDate) && appointmentTime) {
       const currentTime = getCurrentTime();
       if (appointmentTime <= currentTime) {
@@ -114,7 +112,6 @@ export default function SalonDetailPage() {
     }
   };
 
-  // ✅ Handle time change
   const handleTimeChange = (e) => {
     const newTime = e.target.value;
     setAppointmentTime(newTime);
@@ -126,7 +123,6 @@ export default function SalonDetailPage() {
       fetchSalonDetails();
     }
     
-    // Set today's date as default
     const today = getTodayDate();
     setAppointmentDate(today);
   }, [params.id]);
@@ -155,6 +151,7 @@ export default function SalonDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching salon details:', error);
+      toast.error('Failed to load salon details');
     } finally {
       setLoading(false);
     }
@@ -172,30 +169,30 @@ export default function SalonDetailPage() {
     setSelectedStaff(staffId === selectedStaff ? null : staffId);
   };
 
+  // ✅ UPDATED WITH TOASTS
   const handleCheckIn = async () => {
     if (!customerName || !customerPhone) {
-      alert('Please enter your name and phone number');
+      toast.error('Please enter your name and phone number');
       return;
     }
 
     if (selectedServices.length === 0) {
-      alert('Please select at least one service');
+      toast.error('Please select at least one service');
       return;
     }
 
     if (!appointmentDate) {
-      alert('Please select a date');
+      toast.error('Please select a date');
       return;
     }
 
     if (!appointmentTime) {
-      alert('Please select a time');
+      toast.error('Please select a time');
       return;
     }
 
-    // ✅ Final validation before submit
     if (!validateDateTime(appointmentDate, appointmentTime)) {
-      alert(dateTimeError || 'Please select a valid future date and time');
+      toast.error(dateTimeError || 'Please select a valid future date and time');
       return;
     }
 
@@ -207,6 +204,7 @@ export default function SalonDetailPage() {
     }
 
     setCheckingIn(true);
+    toast.info('Creating your booking...');
 
     try {
       const response = await fetch('/api/queue/checkin', {
@@ -220,24 +218,51 @@ export default function SalonDetailPage() {
           appointmentDate,
           appointmentTime,
           staffId: selectedStaff,
+          amount: getSelectedServicesTotal(),
+          paymentStatus: paymentRequired ? 'pending' : 'paid',
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        const staffName = selectedStaff ? staff.find(s => s._id === selectedStaff)?.name : 'Any available staff';
-        alert(`✅ Checked in successfully!\n\nQueue Position: #${data.queueEntry.position}\nStaff: ${staffName}\nDate: ${appointmentDate}\nTime: ${appointmentTime}`);
-        router.push(`/queue/${data.queueEntry._id}`);
+        setCheckinData(data.queueEntry);
+        
+        if (paymentRequired && getSelectedServicesTotal() > 0) {
+          toast.success('Booking created! Complete payment to confirm.');
+          setShowPaymentModal(true);
+        } else {
+          toast.success(`✅ Checked in successfully! Queue #${data.queueEntry.position}`);
+          setTimeout(() => {
+            router.push(`/queue/${data.queueEntry._id}`);
+          }, 1500);
+        }
       } else {
-        alert('Failed to check in: ' + data.error);
+        toast.error('Failed to check in: ' + data.error);
       }
     } catch (error) {
       console.error('Check-in error:', error);
-      alert('Error during check-in. Please try again.');
+      toast.error('Error during check-in. Please try again.');
     } finally {
       setCheckingIn(false);
     }
+  };
+
+  // ✅ UPDATED WITH TOASTS
+  const handlePaymentSuccess = (paymentData) => {
+    toast.success('🎉 Payment successful! Booking confirmed.');
+    setTimeout(() => {
+      router.push(`/queue/${checkinData._id}?payment=success`);
+    }, 1500);
+  };
+
+  // ✅ UPDATED WITH TOASTS
+  const handleSkipPayment = () => {
+    setShowPaymentModal(false);
+    toast.info('Booking confirmed! Please pay at the salon.');
+    setTimeout(() => {
+      router.push(`/queue/${checkinData._id}`);
+    }, 1000);
   };
 
   const getSelectedServicesTotal = () => {
@@ -296,14 +321,14 @@ export default function SalonDetailPage() {
                 <img src={salon.logo.url} alt={salon.name} className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-white shadow-xl" />
               )}
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{salon.name}</h1>
-              <p className="text-white text-lg mb-4">📍 {salon.address}, {salon.city}</p>
+              <p className="text-white text-lg mb-4">📍 {salon.address?.fullAddress || `${salon.address}, ${salon.city}`}</p>
             </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
+            {/* Main Content - Services & Staff */}
             <div className="lg:col-span-2 space-y-8">
               
               {/* Services Section */}
@@ -365,7 +390,7 @@ export default function SalonDetailPage() {
                 )}
               </div>
 
-              {/* Staff Selection Section */}
+              {/* Staff Selection */}
               {staff.length > 0 && (
                 <div className="bg-white rounded-xl shadow-md p-6">
                   <div className="flex items-center justify-between mb-6">
@@ -475,7 +500,7 @@ export default function SalonDetailPage() {
                           type="text"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                           placeholder="Enter your name"
                           required
                         />
@@ -487,13 +512,12 @@ export default function SalonDetailPage() {
                           type="tel"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                           placeholder="+91 1234567890"
                           required
                         />
                       </div>
 
-                      {/* ✅ Date Input with Validation */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Date *</label>
                         <input
@@ -501,19 +525,18 @@ export default function SalonDetailPage() {
                           value={appointmentDate}
                           onChange={handleDateChange}
                           min={getTodayDate()}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                           required
                         />
                         <p className="text-xs text-gray-500 mt-1">📅 Today or later</p>
                       </div>
 
-                      {/* ✅ Time Select with Validation */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Time *</label>
                         <select
                           value={appointmentTime}
                           onChange={handleTimeChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900"
                           required
                         >
                           <option value="">Select time</option>
@@ -526,12 +549,29 @@ export default function SalonDetailPage() {
                         </p>
                       </div>
 
-                      {/* ✅ Date/Time Error Display */}
                       {dateTimeError && (
                         <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg">
                           <p className="text-sm text-red-800 font-medium">{dateTimeError}</p>
                         </div>
                       )}
+
+                      {/* Payment Option Toggle */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={paymentRequired}
+                            onChange={(e) => setPaymentRequired(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 rounded"
+                          />
+                          <span className="text-sm font-medium text-blue-900">
+                            💳 Pay advance online (recommended)
+                          </span>
+                        </label>
+                        <p className="text-xs text-blue-700 mt-1 ml-6">
+                          {paymentRequired ? 'Secure your booking with online payment' : 'You can pay at the salon'}
+                        </p>
+                      </div>
                     </div>
 
                     <button
@@ -548,13 +588,15 @@ export default function SalonDetailPage() {
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           Checking In...
                         </span>
+                      ) : paymentRequired ? (
+                        `💳 Proceed to Payment (₹${getSelectedServicesTotal()})`
                       ) : (
                         '✅ Check In Now'
                       )}
                     </button>
 
                     <p className="text-xs text-gray-500 text-center">
-                      You'll receive your queue position after check-in
+                      {paymentRequired ? '🔒 Secure payment via Razorpay' : 'You can pay at the salon after service'}
                     </p>
                   </div>
                 ) : (
@@ -588,6 +630,19 @@ export default function SalonDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Payment Modal */}
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          amount={getSelectedServicesTotal()}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          salonName={salon?.name}
+          checkinId={checkinData?._id}
+          onSuccess={handlePaymentSuccess}
+          onSkip={handleSkipPayment}
+        />
       </div>
     </>
   );

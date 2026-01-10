@@ -8,7 +8,6 @@ export function ToastProvider({ children }) {
   const counterRef = useRef(0);
 
   const addToast = useCallback((message, type = 'success') => {
-    // Generate unique ID using timestamp + counter
     const id = `${Date.now()}-${counterRef.current++}`;
     setToasts((prev) => [...prev, { id, message, type }]);
 
@@ -47,7 +46,8 @@ export function useToast() {
 
 function ToastContainer({ toasts, removeToast }) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-3 pointer-events-none">
+    // ✅ UPDATED: Add proper z-index
+    <div className="fixed top-4 right-4 z-[10000] space-y-3 pointer-events-none">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
@@ -72,13 +72,16 @@ function ToastItem({ toast, onClose }) {
 
   return (
     <div
-      className={`${styles[toast.type]} px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-md animate-slide-in pointer-events-auto`}
+      className={`${styles[toast.type]} px-6 py-4 rounded-lg shadow-lg flex items-start gap-3 min-w-[300px] max-w-md animate-slide-in pointer-events-auto`}
     >
-      <span className="text-2xl">{icons[toast.type]}</span>
-      <p className="flex-1 font-medium">{toast.message}</p>
+      <span className="text-2xl flex-shrink-0">{icons[toast.type]}</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium break-words whitespace-pre-line">{toast.message}</p>
+      </div>
       <button
         onClick={onClose}
-        className="text-white hover:opacity-75 transition-opacity"
+        className="text-white hover:opacity-75 transition-opacity flex-shrink-0"
+        aria-label="Close notification"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

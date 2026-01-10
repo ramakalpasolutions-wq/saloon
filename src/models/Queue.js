@@ -23,7 +23,7 @@ const QueueSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Salon',
     required: true,
-    index: true
+    index: true // ✅ This creates index 1
   },
   
   // Service Details
@@ -48,17 +48,17 @@ const QueueSchema = new mongoose.Schema({
     required: true
   },
   estimatedWaitTime: {
-    type: Number, // in minutes
+    type: Number,
     default: 0
   },
   
-  // ✅ NEW: Appointment Date & Time
+  // Appointment Date & Time
   appointmentDate: {
-    type: String, // Store as "2026-01-08"
+    type: String,
     trim: true
   },
   appointmentTime: {
-    type: String, // Store as "14:30"
+    type: String,
     trim: true
   },
   
@@ -67,14 +67,14 @@ const QueueSchema = new mongoose.Schema({
     type: String,
     enum: ['waiting', 'in-progress', 'completed', 'cancelled', 'no-show'],
     default: 'waiting',
-    index: true
+    index: true // ✅ This creates index 2
   },
   
   // Timestamps
   checkInTime: {
     type: Date,
     default: Date.now,
-    index: true
+    index: true // ✅ This creates index 3
   },
   startTime: {
     type: Date
@@ -89,15 +89,40 @@ const QueueSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Payment
+  // ✅ ENHANCED PAYMENT FIELDS
   amount: {
     type: Number,
     default: 0
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'paid', 'refunded'],
-    default: 'pending'
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending',
+    // ❌ REMOVE THIS LINE - It's the duplicate!
+    // index: true  // <-- DELETE THIS LINE
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'upi', 'card', 'netbanking', 'wallet'],
+    default: 'cash'
+  },
+  // ✅ Razorpay Payment IDs
+  razorpayOrderId: {
+    type: String,
+    trim: true,
+    sparse: true // ✅ Add sparse for optional fields
+  },
+  razorpayPaymentId: {
+    type: String,
+    trim: true,
+    sparse: true // ✅ Add sparse for optional fields
+  },
+  razorpaySignature: {
+    type: String,
+    trim: true
+  },
+  paidAt: {
+    type: Date
   },
   
   // Notifications
@@ -106,7 +131,7 @@ const QueueSchema = new mongoose.Schema({
     default: false
   },
   
-  // Customer User Reference (if registered)
+  // Customer User Reference
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -115,11 +140,13 @@ const QueueSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
-QueueSchema.index({ salon: 1, status: 1, checkInTime: -1 });
-QueueSchema.index({ salon: 1, queueNumber: 1 });
-QueueSchema.index({ customerPhone: 1, salon: 1 });
-QueueSchema.index({ appointmentDate: 1, appointmentTime: 1 }); // ✅ NEW INDEX
+// ✅ OPTIMIZED COMPOUND INDEXES
+QueueSchema.index({ salon: 1, status: 1, checkInTime: -1 }); // Query by salon + status + time
+QueueSchema.index({ salon: 1, queueNumber: 1 }); // Query by salon + queue number
+QueueSchema.index({ customerPhone: 1, salon: 1 }); // Query by customer phone
+QueueSchema.index({ appointmentDate: 1, appointmentTime: 1 }); // Query by appointment
+QueueSchema.index({ salon: 1, paymentStatus: 1 }); // ✅ CHANGED: Compound index instead of single
+// ❌ REMOVED: QueueSchema.index({ paymentStatus: 1 }); // Delete this duplicate line
 
 // Method to get position in queue
 QueueSchema.methods.getQueuePosition = async function() {
@@ -144,7 +171,7 @@ QueueSchema.statics.getNextQueueNumber = async function(salonId) {
   return lastQueue ? lastQueue.queueNumber + 1 : 1;
 };
 
-// ✅ NEW: Static method to get next queue number for specific date
+// Static method to get next queue number for specific date
 QueueSchema.statics.getNextQueueNumberForDate = async function(salonId, appointmentDate) {
   const lastQueue = await this.findOne({
     salon: salonId,
@@ -154,16 +181,29 @@ QueueSchema.statics.getNextQueueNumberForDate = async function(salonId, appointm
   return lastQueue ? lastQueue.queueNumber + 1 : 1;
 };
 
-// ✅ NEW: Method to format appointment date/time
+// Method to format appointment date/time
 QueueSchema.methods.getFormattedAppointment = function() {
   if (!this.appointmentDate || !this.appointmentTime) {
     return null;
   }
-  
   return `${this.appointmentDate} at ${this.appointmentTime}`;
 };
 
-// ✅ Delete cached model to force reload
+// ✅ Method to check if payment is required
+QueueSchema.methods.isPaymentRequired = function() {
+  return this.amount > 0 && this.paymentStatus === 'pending';
+};
+
+// ✅ Method to mark as paid
+QueueSchema.methods.markAsPaid = async function(paymentDetails) {
+  this.paymentStatus = 'paid';
+  this.razorpayOrderId = paymentDetails.razorpay_order_id;
+  this.razorpayPaymentId = paymentDetails.razorpay_payment_id;
+  this.razorpaySignature = paymentDetails.razorpay_signature;
+  this.paidAt = new Date();
+  return await this.save();
+};
+
 delete mongoose.models.Queue;
 
 export default mongoose.model('Queue', QueueSchema);

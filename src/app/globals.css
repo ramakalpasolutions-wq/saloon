@@ -250,3 +250,45 @@ button {
 .container-responsive {
   @apply px-3 sm:px-4 lg:px-6 xl:px-8;
 }
+/* Toast positioning - responsive */
+@media (max-width: 640px) {
+  /* Move toasts to top-center on mobile */
+  .toast-container-mobile {
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    width: calc(100% - 2rem);
+    max-width: 400px;
+  }
+}
+
+/* Enhanced toast animations */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out-right 0.3s ease-in;
+}
