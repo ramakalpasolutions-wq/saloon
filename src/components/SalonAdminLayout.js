@@ -76,18 +76,23 @@ export default function SalonAdminLayout({ children }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-white hover:bg-green-800 rounded-lg"
+              className="p-2 text-white hover:bg-green-800 rounded-lg transition-colors"
+              aria-label="Toggle Menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {sidebarOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
-            <h2 className="text-lg font-bold text-white">Salon Admin</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white">Salon Admin</h2>
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
           >
             Logout
           </button>
@@ -97,14 +102,14 @@ export default function SalonAdminLayout({ children }) {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-50
+        fixed left-0 top-0 h-full w-72 sm:w-80 lg:w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-50
         transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -130,7 +135,8 @@ export default function SalonAdminLayout({ children }) {
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="p-2 text-white hover:bg-green-800 rounded-lg"
+            className="p-2 text-white hover:bg-green-800 rounded-lg transition-colors"
+            aria-label="Close Menu"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -140,13 +146,13 @@ export default function SalonAdminLayout({ children }) {
 
         {/* User Info */}
         {user && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-green-800 bg-opacity-30">
+          <div className="px-4 py-4 bg-green-800/30 border-b border-green-500">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-sm sm:text-base">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-base sm:text-lg flex-shrink-0">
                 {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{user.name || 'Admin User'}</p>
+                <p className="text-sm sm:text-base font-semibold text-white truncate">{user.name || 'Admin User'}</p>
                 <p className="text-xs text-green-200 truncate">{user.email}</p>
               </div>
             </div>
@@ -154,7 +160,7 @@ export default function SalonAdminLayout({ children }) {
         )}
         
         {/* Navigation */}
-        <nav className="px-3 py-4 sm:py-6 space-y-1">
+        <nav className="px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -165,11 +171,11 @@ export default function SalonAdminLayout({ children }) {
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
                   isActive 
                     ? 'bg-white text-green-700 shadow-md' 
-                    : 'text-white hover:bg-green-800 hover:bg-opacity-50'
+                    : 'text-white hover:bg-green-800/50'
                 }`}
               >
-                <span className="text-lg sm:text-xl">{item.icon}</span>
-                <span>{item.label}</span>
+                <span className="text-xl sm:text-2xl">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
@@ -178,7 +184,7 @@ export default function SalonAdminLayout({ children }) {
           <div className="hidden lg:block pt-4 mt-4 border-t border-green-500">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-white hover:bg-red-600 hover:bg-opacity-80 transition-all"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-white hover:bg-red-600/80 transition-all"
             >
               <span className="text-xl">🚪</span>
               <span>Logout</span>
@@ -188,8 +194,10 @@ export default function SalonAdminLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-20 p-4 sm:p-6 lg:p-8">
-        {children}
+      <main className="lg:ml-64 min-h-screen">
+        <div className="pt-16 lg:pt-0 p-4 sm:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
