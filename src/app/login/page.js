@@ -146,11 +146,11 @@ function LoginForm() {
           </div>
 
           {/* Test Credentials */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          {/* <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-xs text-black font-semibold mb-1">Admin Login:</p>
             <p className="text-xs text-black">Email: admin@greensaloon.com</p>
             <p className="text-xs text-black">Password: admin123</p>
-          </div>
+          </div> */}
         </div>
 
         {/* Back to Home */}

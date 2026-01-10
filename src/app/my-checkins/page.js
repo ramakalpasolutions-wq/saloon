@@ -90,7 +90,7 @@ function MyCheckinsContent() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">📋 My Check-ins</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mt-10 mb-2">📋 My Check-ins</h1>
           <p className="text-sm sm:text-base text-gray-600">Track all your salon appointments</p>
         </div>
 
