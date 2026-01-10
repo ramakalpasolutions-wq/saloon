@@ -26,8 +26,8 @@ export default function NewSalonPage() {
       state: '',
       zipCode: '',
     },
-    googleMapsLink: '', // Primary location source
-    coordinates: [78.4867, 17.385], // Extracted from Google Maps link
+    googleMapsLink: '',
+    coordinates: [78.4867, 17.385],
     adminName: '',
     adminEmail: '',
     adminPhone: '',
@@ -45,7 +45,6 @@ export default function NewSalonPage() {
     images: [],
   });
 
-  // Extract coordinates when Google Maps link changes
   useEffect(() => {
     const extractAndSetCoordinates = async () => {
       if (formData.googleMapsLink) {
@@ -69,7 +68,6 @@ export default function NewSalonPage() {
       }
     };
 
-    // Debounce the extraction
     const timer = setTimeout(() => {
       extractAndSetCoordinates();
     }, 1000);
@@ -237,44 +235,44 @@ export default function NewSalonPage() {
 
   return (
     <AdminLayout requiredRole="main-admin">
-      <div className="max-w-6xl">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Link href="/admin/salons">
-            <button className="text-green-600 hover:text-green-700 mb-4 flex items-center gap-2">
+            <button className="text-green-600 hover:text-green-700 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
               ← Back to All Salons
             </button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Salon</h1>
-          <p className="text-gray-600 mt-2">Create a new salon with admin account</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Salon</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">Create a new salon with admin account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Basic Information</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Logo */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Salon Logo
                 </label>
                 {formData.logo?.url && (
-                  <img src={formData.logo.url} alt="Logo" className="w-32 h-32 object-cover rounded-lg mb-3" />
+                  <img src={formData.logo.url} alt="Logo" className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg mb-3" />
                 )}
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleLogoUpload}
                   disabled={uploadingLogo}
-                  className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border text-black border-gray-300 rounded-lg text-xs sm:text-sm"
                 />
-                {uploadingLogo && <p className="text-sm text-gray-500 mt-2">Uploading logo...</p>}
+                {uploadingLogo && <p className="text-xs sm:text-sm text-gray-500 mt-2">Uploading logo...</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Salon Name *
                 </label>
                 <input
@@ -283,12 +281,12 @@ export default function NewSalonPage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -296,13 +294,13 @@ export default function NewSalonPage() {
                   value={formData.description}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Phone *
                   </label>
                   <input
@@ -311,12 +309,12 @@ export default function NewSalonPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
                   <input
@@ -325,7 +323,7 @@ export default function NewSalonPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -333,12 +331,12 @@ export default function NewSalonPage() {
           </div>
 
           {/* Address */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Address</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Address</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Street Address *
                 </label>
                 <input
@@ -347,13 +345,13 @@ export default function NewSalonPage() {
                   value={formData.address.street}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     City *
                   </label>
                   <input
@@ -362,12 +360,12 @@ export default function NewSalonPage() {
                     value={formData.address.city}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     State *
                   </label>
                   <input
@@ -376,12 +374,12 @@ export default function NewSalonPage() {
                     value={formData.address.state}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     ZIP Code *
                   </label>
                   <input
@@ -390,20 +388,20 @@ export default function NewSalonPage() {
                     value={formData.address.zipCode}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* GOOGLE MAPS LINK - Replaces MAP LOCATION section */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Location</h2>
+          {/* Google Maps Location */}
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">📍 Location</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Google Maps Link *
                 </label>
                 <input
@@ -412,8 +410,8 @@ export default function NewSalonPage() {
                   value={formData.googleMapsLink}
                   onChange={handleChange}
                   required
-                  placeholder="https://maps.app.goo.gl/xxxxx or https://www.google.com/maps/@17.385,78.486,15z"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="https://maps.app.goo.gl/xxxxx"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent text-xs sm:text-sm break-all"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   📱 How to get: Open Google Maps → Search location → Tap Share → Copy link
@@ -421,10 +419,10 @@ export default function NewSalonPage() {
               </div>
 
               {formData.googleMapsLink && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-blue-900 mb-2">✅ Supported Link Formats:</p>
-                  <ul className="text-xs text-blue-700 space-y-1">
-                    <li>• https://maps.app.goo.gl/xxxxx (Shortened link)</li>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm font-medium text-blue-900 mb-2">✅ Supported Link Formats:</p>
+                  <ul className="text-xs text-blue-700 space-y-1 break-all">
+                    <li>• https://maps.app.goo.gl/xxxxx</li>
                     <li>• https://www.google.com/maps/@17.385,78.486,15z</li>
                     <li>• https://www.google.com/maps/place/Name/@17.385,78.486</li>
                     <li>• https://maps.google.com/?q=17.385,78.486</li>
@@ -432,11 +430,10 @@ export default function NewSalonPage() {
                 </div>
               )}
 
-              {/* Preview map if coordinates can be extracted */}
               {formData.googleMapsLink && formData.coordinates && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
-                  <div className="h-64 rounded-lg overflow-hidden border-2 border-gray-200">
+                <div className="mt-3 sm:mt-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
+                  <div className="h-48 sm:h-64 lg:h-96 rounded-lg overflow-hidden border-2 border-gray-200">
                     <MapView
                       salons={[{
                         _id: 'new',
@@ -450,7 +447,7 @@ export default function NewSalonPage() {
                       zoom={15}
                     />
                   </div>
-                  <p className="text-xs text-green-600 mt-2">
+                  <p className="text-xs text-green-600 mt-2 break-all">
                     ✅ Coordinates extracted: {formData.coordinates[1].toFixed(6)}, {formData.coordinates[0].toFixed(6)}
                   </p>
                 </div>
@@ -459,13 +456,13 @@ export default function NewSalonPage() {
           </div>
 
           {/* Admin Account */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Admin Account Details</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Admin Account Details</h2>
             
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Admin Name *
                   </label>
                   <input
@@ -474,12 +471,12 @@ export default function NewSalonPage() {
                     value={formData.adminName}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Admin Email *
                   </label>
                   <input
@@ -488,14 +485,14 @@ export default function NewSalonPage() {
                     value={formData.adminEmail}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Admin Phone
                   </label>
                   <input
@@ -503,12 +500,12 @@ export default function NewSalonPage() {
                     name="adminPhone"
                     value={formData.adminPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Admin Password *
                   </label>
                   <input
@@ -518,7 +515,7 @@ export default function NewSalonPage() {
                     onChange={handleChange}
                     required
                     minLength={6}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -526,40 +523,42 @@ export default function NewSalonPage() {
           </div>
 
           {/* Opening Hours */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Opening Hours</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Opening Hours</h2>
             
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {formData.openingHours.map((hours, index) => (
-                <div key={hours.day} className="flex items-center gap-4">
-                  <div className="w-32">
-                    <span className="font-medium text-gray-700">{hours.day}</span>
+                <div key={hours.day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="w-full sm:w-32">
+                    <span className="font-medium text-gray-700 text-sm sm:text-base">{hours.day}</span>
                   </div>
                   
-                  <input
-                    type="checkbox"
-                    checked={!hours.isClosed}
-                    onChange={(e) => updateOpeningHours(index, 'isClosed', !e.target.checked)}
-                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                  />
-                  <span className="text-sm text-gray-600">Open</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!hours.isClosed}
+                      onChange={(e) => updateOpeningHours(index, 'isClosed', !e.target.checked)}
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <span className="text-xs sm:text-sm text-gray-600">Open</span>
+                  </div>
 
                   {!hours.isClosed && (
-                    <>
+                    <div className="flex items-center gap-2 flex-1">
                       <input
                         type="time"
                         value={hours.open}
                         onChange={(e) => updateOpeningHours(index, 'open', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent text-xs sm:text-sm"
                       />
-                      <span className="text-gray-500">to</span>
+                      <span className="text-gray-500 text-xs sm:text-sm">to</span>
                       <input
                         type="time"
                         value={hours.close}
                         onChange={(e) => updateOpeningHours(index, 'close', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-green-500 focus:border-transparent text-xs sm:text-sm"
                       />
-                    </>
+                    </div>
                   )}
                 </div>
               ))}
@@ -567,36 +566,36 @@ export default function NewSalonPage() {
           </div>
 
           {/* Gallery */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Photo Gallery (Optional)</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Photo Gallery (Optional)</h2>
             
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <input
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={handleGalleryUpload}
                 disabled={uploadingGallery}
-                className="w-full px-4 py-2 border text-black border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2 border text-black border-gray-300 rounded-lg text-xs sm:text-sm"
               />
-              {uploadingGallery && <p className="text-sm text-gray-500 mt-2">Uploading images...</p>}
+              {uploadingGallery && <p className="text-xs sm:text-sm text-gray-500 mt-2">Uploading images...</p>}
             </div>
 
             {formData.images.length > 0 && (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
                 {formData.images.map((image, index) => (
                   <div key={index} className="relative group">
                     <img
                       src={image.url}
                       alt={`Gallery ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-24 sm:h-32 object-cover rounded-lg"
                     />
                     <button
                       type="button"
                       onClick={() => removeGalleryImage(index)}
-                      className="absolute top-2 right-2 bg-red-600 text-black rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -607,11 +606,11 @@ export default function NewSalonPage() {
           </div>
 
           {/* Submit Button */}
-          <div className="flex gap-4">
+          <div className="flex gap-3 sm:gap-4">
             <button
               type="submit"
               disabled={loading || uploadingLogo || uploadingGallery}
-              className={`flex-1 px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+              className={`flex-1 px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-semibold text-white transition-colors text-sm sm:text-base ${
                 loading || uploadingLogo || uploadingGallery
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-600 hover:bg-green-700'

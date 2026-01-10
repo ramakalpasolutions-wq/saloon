@@ -15,7 +15,7 @@ export default function AllSalonsPage() {
   const [filteredSalons, setFilteredSalons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // Filter state
+  const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState('list');
 
   useEffect(() => {
@@ -31,7 +31,6 @@ export default function AllSalonsPage() {
     try {
       console.log('🔄 Fetching salons...');
 
-      // ✅ CHANGE THIS LINE - Use admin API instead
       const response = await fetch('/api/admin/salons');
       console.log('📡 Response status:', response.status);
 
@@ -55,7 +54,6 @@ export default function AllSalonsPage() {
 
       if (data.salons && Array.isArray(data.salons)) {
         console.log('✅ Setting salons:', data.salons.length);
-        // Log status of each salon
         data.salons.forEach(s => {
           console.log(`  - ${s.name}: ${s.status}`);
         });
@@ -74,16 +72,13 @@ export default function AllSalonsPage() {
     }
   };
 
-
   const applyFilters = () => {
     let filtered = [...salons];
 
-    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(salon => salon.status === statusFilter);
     }
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(salon =>
@@ -187,45 +182,47 @@ export default function AllSalonsPage() {
 
   return (
     <AdminLayout requiredRole="main-admin">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">All Salons</h1>
-            <p className="text-gray-600 mt-2">Manage and monitor all registered salons</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Salons</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage and monitor all registered salons</p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/admin/salons/bulk-upload">
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
-                <span className="text-xl">📤</span>
-                Bulk Upload
+          <div className="flex gap-2 sm:gap-3">
+            <Link href="/admin/salons/bulk-upload" className="flex-1 sm:flex-none">
+              <button className="w-full px-3 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 text-sm sm:text-base">
+                <span className="text-lg sm:text-xl">📤</span>
+                <span className="hidden xs:inline">Bulk Upload</span>
+                <span className="xs:hidden">Bulk</span>
               </button>
             </Link>
-            <Link href="/admin/salons/new">
-              <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2">
-                <span className="text-xl">+</span>
-                Add New Salon
+            <Link href="/admin/salons/new" className="flex-1 sm:flex-none">
+              <button className="w-full px-3 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 text-sm sm:text-base">
+                <span className="text-lg sm:text-xl">+</span>
+                <span className="hidden xs:inline">Add New Salon</span>
+                <span className="xs:hidden">Add</span>
               </button>
             </Link>
           </div>
         </div>
 
         {/* Search and View Mode */}
-        <div className="bg-white rounded-lg text-black shadow-sm p-4">
-          <div className="flex gap-4">
+        <div className="bg-white rounded-lg text-black shadow-sm p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="🔍 Search by name, email, phone, city, or admin..."
+                placeholder="🔍 Search salons..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 pl-10 sm:pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
               />
-              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-xl">🔍</span>
+              <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-lg sm:text-xl">🔍</span>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-black hover:text-black"
+                  className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 text-sm sm:text-base"
                 >
                   ✕
                 </button>
@@ -236,19 +233,21 @@ export default function AllSalonsPage() {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === 'list'
+                className={`flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
+                  viewMode === 'list'
                     ? 'bg-white text-green-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                }`}
               >
                 📋 List
               </button>
               <button
                 onClick={() => setViewMode('map')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === 'map'
+                className={`flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-colors text-xs sm:text-sm ${
+                  viewMode === 'map'
                     ? 'bg-white text-green-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                }`}
               >
                 🗺️ Map
               </button>
@@ -257,103 +256,111 @@ export default function AllSalonsPage() {
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'all'
+              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                statusFilter === 'all'
                   ? 'bg-green-600 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              }`}
             >
               All ({getStatusCount('all')})
             </button>
             <button
               onClick={() => setStatusFilter('approved')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'approved'
+              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                statusFilter === 'approved'
                   ? 'bg-green-600 text-white shadow-md'
                   : 'bg-green-50 text-green-700 hover:bg-green-100'
-                }`}
+              }`}
             >
-              ✅ Approved ({getStatusCount('approved')})
+              <span className="hidden xs:inline">✅ </span>Approved ({getStatusCount('approved')})
             </button>
             <button
               onClick={() => setStatusFilter('pending')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'pending'
+              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                statusFilter === 'pending'
                   ? 'bg-yellow-600 text-white shadow-md'
                   : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                }`}
+              }`}
             >
-              ⏳ Pending ({getStatusCount('pending')})
+              <span className="hidden xs:inline">⏳ </span>Pending ({getStatusCount('pending')})
             </button>
             <button
               onClick={() => setStatusFilter('suspended')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'suspended'
+              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                statusFilter === 'suspended'
                   ? 'bg-gray-600 text-white shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              }`}
             >
-              ⏸️ Suspended ({getStatusCount('suspended')})
+              <span className="hidden xs:inline">⏸️ </span>Suspended ({getStatusCount('suspended')})
             </button>
             <button
               onClick={() => setStatusFilter('rejected')}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all ${statusFilter === 'rejected'
+              className={`px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                statusFilter === 'rejected'
                   ? 'bg-red-600 text-white shadow-md'
                   : 'bg-red-50 text-red-700 hover:bg-red-100'
-                }`}
+              }`}
             >
-              ❌ Rejected ({getStatusCount('rejected')})
+              <span className="hidden xs:inline">❌ </span>Rejected ({getStatusCount('rejected')})
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-            <div className="text-3xl font-bold text-gray-900">{salons.length}</div>
-            <div className="text-sm text-gray-600 mt-1">Total Salons</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border-l-4 border-blue-500">
+            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{salons.length}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Salons</div>
           </div>
-          <div className="bg-green-50 rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-            <div className="text-3xl font-bold text-green-600">
+          <div className="bg-green-50 rounded-lg shadow-sm p-4 sm:p-6 border-l-4 border-green-500">
+            <div className="text-2xl sm:text-3xl font-bold text-green-600">
               {salons.filter(s => s.status === 'approved').length}
             </div>
-            <div className="text-sm text-gray-600 mt-1">Approved</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Approved</div>
           </div>
-          <div className="bg-yellow-50 rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
-            <div className="text-3xl font-bold text-yellow-600">
+          <div className="bg-yellow-50 rounded-lg shadow-sm p-4 sm:p-6 border-l-4 border-yellow-500">
+            <div className="text-2xl sm:text-3xl font-bold text-yellow-600">
               {salons.filter(s => s.status === 'pending').length}
             </div>
-            <div className="text-sm text-gray-600 mt-1">Pending</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Pending</div>
           </div>
-          <div className="bg-red-50 rounded-lg shadow-sm p-6 border-l-4 border-red-500">
-            <div className="text-3xl font-bold text-red-600">
+          <div className="bg-red-50 rounded-lg shadow-sm p-4 sm:p-6 border-l-4 border-red-500">
+            <div className="text-2xl sm:text-3xl font-bold text-red-600">
               {salons.filter(s => s.status === 'rejected' || s.status === 'suspended').length}
             </div>
-            <div className="text-sm text-gray-600 mt-1">Rejected/Suspended</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">
+              <span className="hidden sm:inline">Rejected/Suspended</span>
+              <span className="sm:hidden">Rej/Susp</span>
+            </div>
           </div>
         </div>
 
         {/* Salons List */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading salons...</p>
+          <div className="text-center py-8 sm:py-12">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 text-sm sm:text-base">Loading salons...</p>
           </div>
         ) : filteredSalons.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="text-6xl mb-4">🏪</div>
-            <p className="text-gray-500 text-lg mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center">
+            <div className="text-5xl sm:text-6xl mb-4">🏪</div>
+            <p className="text-gray-500 text-base sm:text-lg mb-4">
               {searchQuery
                 ? `No salons found matching "${searchQuery}"`
                 : statusFilter !== 'all'
-                  ? `No ${statusFilter} salons found`
-                  : 'No salons registered yet'}
+                ? `No ${statusFilter} salons found`
+                : 'No salons registered yet'}
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  className="px-4 py-2 sm:px-6 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base"
                 >
                   Clear Search
                 </button>
@@ -361,7 +368,7 @@ export default function AllSalonsPage() {
               {statusFilter !== 'all' && (
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="px-4 py-2 sm:px-6 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base"
                 >
                   Show All Salons
                 </button>
@@ -370,10 +377,10 @@ export default function AllSalonsPage() {
           </div>
         ) : viewMode === 'list' ? (
           <div>
-            <div className="mb-4 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+            <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="text-xs sm:text-sm text-gray-600">
                 Showing {filteredSalons.length} of {salons.length} salons
-                {statusFilter !== 'all' && <span className="font-medium"> • Filtered by: {getStatusLabel(statusFilter)}</span>}
+                {statusFilter !== 'all' && <span className="font-medium hidden sm:inline"> • Filtered by: {getStatusLabel(statusFilter)}</span>}
               </div>
               {(searchQuery || statusFilter !== 'all') && (
                 <button
@@ -381,56 +388,56 @@ export default function AllSalonsPage() {
                     setSearchQuery('');
                     setStatusFilter('all');
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Clear All Filters
                 </button>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredSalons.map((salon) => (
                 <div
                   key={salon._id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start gap-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4 sm:gap-6">
                     {/* Salon Logo */}
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 mx-auto lg:mx-0">
                       {salon.logo?.url ? (
                         <img
                           src={salon.logo.url}
                           alt={salon.name}
-                          className="w-24 h-24 rounded-lg object-cover"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-24 h-24 bg-green-100 rounded-lg flex items-center justify-center">
-                          <span className="text-4xl">🏪</span>
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-lg flex items-center justify-center">
+                          <span className="text-3xl sm:text-4xl">🏪</span>
                         </div>
                       )}
                     </div>
 
                     {/* Salon Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-2xl font-semibold text-gray-900 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                        <div className="min-w-0">
+                          <h3 className="text-lg sm:text-2xl font-semibold text-gray-900 mb-1 break-words">
                             {salon.name}
                           </h3>
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(salon.status)}`}>
+                          <span className={`px-2 py-1 sm:px-3 sm:py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(salon.status)}`}>
                             {getStatusLabel(salon.status)}
                           </span>
                         </div>
                       </div>
 
                       {salon.description && (
-                        <p className="text-gray-600 mb-3">{salon.description}</p>
+                        <p className="text-sm sm:text-base text-gray-600 mb-3 line-clamp-2">{salon.description}</p>
                       )}
 
-                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                         <div>
                           <p className="text-gray-500 font-medium mb-1">📍 Address</p>
-                          <p className="text-gray-700">
+                          <p className="text-gray-700 break-words">
                             {salon.address?.street && `${salon.address.street}, `}
                             {salon.address?.city && `${salon.address.city}, `}
                             {salon.address?.state && `${salon.address.state} `}
@@ -440,15 +447,15 @@ export default function AllSalonsPage() {
 
                         <div>
                           <p className="text-gray-500 font-medium mb-1">📞 Contact</p>
-                          <p className="text-gray-700">{salon.phone}</p>
-                          <p className="text-gray-700">{salon.email}</p>
+                          <p className="text-gray-700 break-all">{salon.phone}</p>
+                          <p className="text-gray-700 break-all">{salon.email}</p>
                         </div>
 
                         {salon.adminId && (
                           <div>
                             <p className="text-gray-500 font-medium mb-1">👤 Admin</p>
-                            <p className="text-gray-700">{salon.adminId.name}</p>
-                            <p className="text-gray-700 text-xs">{salon.adminId.email}</p>
+                            <p className="text-gray-700 break-words">{salon.adminId.name}</p>
+                            <p className="text-gray-700 text-xs break-all">{salon.adminId.email}</p>
                           </div>
                         )}
 
@@ -463,18 +470,17 @@ export default function AllSalonsPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-col gap-2 min-w-[150px]">
+                    <div className="flex flex-col gap-2 lg:min-w-[150px]">
                       <Link href={`/admin/salons/${salon._id}`}>
-                        <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                        <button className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium">
                           View Details
                         </button>
                       </Link>
 
-                      {/* Status Change Dropdown */}
                       <select
                         value={salon.status}
                         onChange={(e) => handleStatusChange(salon._id, e.target.value, salon.name)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-black font-medium focus:ring-2 focus:ring-green-500"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm text-black font-medium focus:ring-2 focus:ring-green-500"
                       >
                         <option value="approved">✅ Approved</option>
                         <option value="pending">⏳ Pending</option>
@@ -484,7 +490,7 @@ export default function AllSalonsPage() {
 
                       <button
                         onClick={() => handleDelete(salon._id, salon.name)}
-                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                        className="w-full px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium"
                       >
                         Delete
                       </button>
@@ -496,15 +502,15 @@ export default function AllSalonsPage() {
           </div>
         ) : (
           /* MAP VIEW */
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <div className="mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                 Showing {filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''} on map
               </h3>
-              <p className="text-sm text-gray-600">Click on any marker to view salon details</p>
+              <p className="text-xs sm:text-sm text-gray-600">Click on any marker to view salon details</p>
             </div>
 
-            <div className="h-[600px] rounded-lg overflow-hidden border-2 border-gray-200">
+            <div className="h-96 sm:h-[500px] lg:h-[600px] rounded-lg overflow-hidden border-2 border-gray-200">
               <MapView
                 salons={filteredSalons}
                 center={[20.5937, 78.9629]}

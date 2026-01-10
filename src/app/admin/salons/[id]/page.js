@@ -73,7 +73,6 @@ export default function SalonDetailsPage({ params }) {
       }
     };
 
-    // Debounce the extraction
     const timer = setTimeout(() => {
       extractAndSetCoordinates();
     }, 1000);
@@ -349,9 +348,9 @@ export default function SalonDetailsPage({ params }) {
   if (loading) {
     return (
       <AdminLayout requiredRole="main-admin">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading salon details...</p>
+        <div className="text-center py-8 sm:py-12 px-3">
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Loading salon details...</p>
         </div>
       </AdminLayout>
     );
@@ -360,11 +359,11 @@ export default function SalonDetailsPage({ params }) {
   if (!salon) {
     return (
       <AdminLayout requiredRole="main-admin">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">😞</div>
-          <p className="text-gray-500 text-lg">Salon not found</p>
+        <div className="text-center py-8 sm:py-12 px-3">
+          <div className="text-5xl sm:text-6xl mb-4">😞</div>
+          <p className="text-gray-500 text-base sm:text-lg">Salon not found</p>
           <Link href="/admin/salons">
-            <button className="mt-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <button className="mt-4 px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base">
               Back to All Salons
             </button>
           </Link>
@@ -375,35 +374,37 @@ export default function SalonDetailsPage({ params }) {
 
   return (
     <AdminLayout requiredRole="main-admin">
-      <div className="max-w-6xl">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Link href="/admin/salons">
-            <button className="text-green-600 hover:text-green-700 mb-4 flex items-center gap-2">
+            <button className="text-green-600 hover:text-green-700 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
               ← Back to All Salons
             </button>
           </Link>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold text-gray-900">{salon.name}</h1>
-              <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusBadge(salon.status)}`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">{salon.name}</h1>
+              <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${getStatusBadge(salon.status)} w-fit`}>
                 {salon.status}
               </span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               {!editing ? (
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
                   >
-                    ✏️ Edit Salon
+                    <span className="hidden xs:inline">✏️ Edit Salon</span>
+                    <span className="xs:hidden">✏️ Edit</span>
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
                   >
-                    🗑️ Delete
+                    <span className="hidden xs:inline">🗑️ Delete</span>
+                    <span className="xs:hidden">🗑️</span>
                   </button>
                 </>
               ) : (
@@ -412,7 +413,7 @@ export default function SalonDetailsPage({ params }) {
                     setEditing(false);
                     fetchSalonDetails();
                   }}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 sm:px-6 sm:py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -421,41 +422,42 @@ export default function SalonDetailsPage({ params }) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Status Management */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Status Management</h2>
-            <div className="flex gap-3 flex-wrap">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Status Management</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {['approved', 'pending', 'suspended', 'rejected'].map((status) => (
                 <button
                   key={status}
                   type="button"
                   onClick={() => handleStatusChange(status)}
                   disabled={salon.status === status}
-                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                  className={`px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-sm lg:text-base ${
                     salon.status === status
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
-                  Mark as {status.charAt(0).toUpperCase() + status.slice(1)}
+                  <span className="hidden sm:inline">Mark as {status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                  <span className="sm:hidden capitalize">{status}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Basic Information</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Logo */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Salon Logo
                 </label>
                 {formData.logo?.url && (
-                  <img src={formData.logo.url} alt="Logo" className="w-32 h-32 object-cover rounded-lg mb-3" />
+                  <img src={formData.logo.url} alt="Logo" className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg mb-3" />
                 )}
                 {editing && (
                   <>
@@ -464,15 +466,15 @@ export default function SalonDetailsPage({ params }) {
                       accept="image/*"
                       onChange={handleLogoUpload}
                       disabled={uploadingLogo}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
                     />
-                    {uploadingLogo && <p className="text-sm text-gray-500 mt-2">Uploading logo...</p>}
+                    {uploadingLogo && <p className="text-xs sm:text-sm text-gray-500 mt-2">Uploading logo...</p>}
                   </>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Salon Name *
                 </label>
                 <input
@@ -482,14 +484,14 @@ export default function SalonDetailsPage({ params }) {
                   onChange={handleChange}
                   disabled={!editing}
                   required
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                     editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -498,15 +500,15 @@ export default function SalonDetailsPage({ params }) {
                   onChange={handleChange}
                   disabled={!editing}
                   rows={4}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                     editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                   }`}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Phone *
                   </label>
                   <input
@@ -516,14 +518,14 @@ export default function SalonDetailsPage({ params }) {
                     onChange={handleChange}
                     disabled={!editing}
                     required
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                       editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
                   <input
@@ -533,7 +535,7 @@ export default function SalonDetailsPage({ params }) {
                     onChange={handleChange}
                     disabled={!editing}
                     required
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                       editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                     }`}
                   />
@@ -543,12 +545,12 @@ export default function SalonDetailsPage({ params }) {
           </div>
 
           {/* Address */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Address</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Address</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Street Address *
                 </label>
                 <input
@@ -558,15 +560,15 @@ export default function SalonDetailsPage({ params }) {
                   onChange={handleChange}
                   disabled={!editing}
                   required
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                     editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                   }`}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     City *
                   </label>
                   <input
@@ -576,14 +578,14 @@ export default function SalonDetailsPage({ params }) {
                     onChange={handleChange}
                     disabled={!editing}
                     required
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                       editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     State *
                   </label>
                   <input
@@ -593,14 +595,14 @@ export default function SalonDetailsPage({ params }) {
                     onChange={handleChange}
                     disabled={!editing}
                     required
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                       editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     ZIP Code *
                   </label>
                   <input
@@ -610,7 +612,7 @@ export default function SalonDetailsPage({ params }) {
                     onChange={handleChange}
                     disabled={!editing}
                     required
-                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm sm:text-base ${
                       editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                     }`}
                   />
@@ -619,13 +621,13 @@ export default function SalonDetailsPage({ params }) {
             </div>
           </div>
 
-          {/* GOOGLE MAPS LINK - Replaces MAP LOCATION section */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">📍 Location</h2>
+          {/* Google Maps Location */}
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">📍 Location</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Google Maps Link *
                 </label>
                 <input
@@ -635,8 +637,8 @@ export default function SalonDetailsPage({ params }) {
                   onChange={handleChange}
                   disabled={!editing}
                   required
-                  placeholder="https://maps.app.goo.gl/xxxxx or https://www.google.com/maps/@17.385,78.486,15z"
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${
+                  placeholder="https://maps.app.goo.gl/xxxxx"
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm lg:text-base break-all ${
                     editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                   }`}
                 />
@@ -645,10 +647,10 @@ export default function SalonDetailsPage({ params }) {
                     href={formData.googleMapsLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-2 text-sm text-blue-600 hover:text-blue-800"
+                    className="inline-flex items-center gap-2 mt-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800"
                   >
                     <span>📍 Open in Google Maps</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>
@@ -660,9 +662,9 @@ export default function SalonDetailsPage({ params }) {
 
               {/* Preview map */}
               {formData.googleMapsLink && formData.coordinates && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
-                  <div className="h-96 rounded-lg overflow-hidden border-2 border-gray-200">
+                <div className="mt-3 sm:mt-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">📍 Location Preview:</p>
+                  <div className="h-64 sm:h-80 lg:h-96 rounded-lg overflow-hidden border-2 border-gray-200">
                     <MapView
                       salons={[{
                         _id: salon._id,
@@ -676,7 +678,7 @@ export default function SalonDetailsPage({ params }) {
                       zoom={15}
                     />
                   </div>
-                  <p className="text-xs text-green-600 mt-2">
+                  <p className="text-xs text-green-600 mt-2 break-all">
                     ✅ Coordinates: {formData.coordinates[1].toFixed(6)}, {formData.coordinates[0].toFixed(6)}
                   </p>
                 </div>
@@ -686,16 +688,16 @@ export default function SalonDetailsPage({ params }) {
 
           {/* Admin Information */}
           {salon.adminId && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Admin Information</h2>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Admin Information</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div>
                   <span className="font-medium text-gray-700">Name:</span>
-                  <p className="text-gray-900">{salon.adminId.name}</p>
+                  <p className="text-gray-900 break-all">{salon.adminId.name}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Email:</span>
-                  <p className="text-gray-900">{salon.adminId.email}</p>
+                  <p className="text-gray-900 break-all">{salon.adminId.email}</p>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">Phone:</span>
@@ -710,52 +712,52 @@ export default function SalonDetailsPage({ params }) {
           )}
 
           {/* Opening Hours */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Opening Hours</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Opening Hours</h2>
             
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {formData.openingHours.map((hours, index) => (
-                <div key={hours.day} className="flex items-center gap-4">
-                  <div className="w-32">
-                    <span className="font-medium text-gray-700">{hours.day}</span>
+                <div key={hours.day} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="w-full sm:w-32">
+                    <span className="font-medium text-gray-700 text-sm sm:text-base">{hours.day}</span>
                   </div>
                   
                   {editing && (
-                    <>
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={!hours.isClosed}
                         onChange={(e) => updateOpeningHours(index, 'isClosed', !e.target.checked)}
                         className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                       />
-                      <span className="text-sm text-gray-600">Open</span>
-                    </>
+                      <span className="text-xs sm:text-sm text-gray-600">Open</span>
+                    </div>
                   )}
 
                   {!hours.isClosed ? (
-                    <>
+                    <div className="flex items-center gap-2 flex-1">
                       <input
                         type="time"
                         value={hours.open}
                         onChange={(e) => updateOpeningHours(index, 'open', e.target.value)}
                         disabled={!editing}
-                        className={`px-3 py-2 border border-gray-300 rounded-lg ${
+                        className={`px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm ${
                           editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                         }`}
                       />
-                      <span className="text-gray-500">to</span>
+                      <span className="text-gray-500 text-xs sm:text-sm">to</span>
                       <input
                         type="time"
                         value={hours.close}
                         onChange={(e) => updateOpeningHours(index, 'close', e.target.value)}
                         disabled={!editing}
-                        className={`px-3 py-2 border border-gray-300 rounded-lg ${
+                        className={`px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm ${
                           editing ? 'focus:ring-2 focus:ring-green-500 focus:border-transparent' : 'bg-gray-50'
                         }`}
                       />
-                    </>
+                    </div>
                   ) : (
-                    <span className="text-red-600 font-medium">Closed</span>
+                    <span className="text-red-600 font-medium text-sm sm:text-base">Closed</span>
                   )}
                 </div>
               ))}
@@ -763,39 +765,39 @@ export default function SalonDetailsPage({ params }) {
           </div>
 
           {/* Gallery */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Photo Gallery</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Photo Gallery</h2>
             
             {editing && (
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <input
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleGalleryUpload}
                   disabled={uploadingGallery}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
                 />
-                {uploadingGallery && <p className="text-sm text-gray-500 mt-2">Uploading images...</p>}
+                {uploadingGallery && <p className="text-xs sm:text-sm text-gray-500 mt-2">Uploading images...</p>}
               </div>
             )}
 
             {formData.images.length > 0 ? (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4">
                 {formData.images.map((image, index) => (
                   <div key={index} className="relative group">
                     <img
                       src={image.url}
                       alt={`Gallery ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg"
+                      className="w-full h-24 sm:h-32 object-cover rounded-lg"
                     />
                     {editing && (
                       <button
                         type="button"
                         onClick={() => removeGalleryImage(index)}
-                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -804,30 +806,30 @@ export default function SalonDetailsPage({ params }) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">No gallery images</p>
+              <p className="text-gray-500 text-center py-6 sm:py-8 text-sm sm:text-base">No gallery images</p>
             )}
           </div>
 
           {/* Staff & Services Count */}
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Staff Members</h3>
-              <p className="text-3xl font-bold text-green-600">{salon.staff?.length || 0}</p>
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Staff Members</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{salon.staff?.length || 0}</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Services</h3>
-              <p className="text-3xl font-bold text-green-600">{salon.services?.length || 0}</p>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Services</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{salon.services?.length || 0}</p>
             </div>
           </div>
 
           {/* Save Button */}
           {editing && (
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               <button
                 type="submit"
                 disabled={saving || uploadingLogo || uploadingGallery}
-                className={`flex-1 px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+                className={`flex-1 px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg font-semibold text-white transition-colors text-sm sm:text-base ${
                   saving || uploadingLogo || uploadingGallery
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700'
