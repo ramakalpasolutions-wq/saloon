@@ -1,8 +1,5 @@
 @import "tailwindcss";
-/* src/app/globals.css */
 @import 'leaflet/dist/leaflet.css';
-
-
 
 :root {
   --background: #ffffff;
@@ -32,7 +29,6 @@ body {
 }
 
 /* Z-INDEX HIERARCHY */
-/* Modals and overlays should be on top */
 [role="dialog"],
 .modal-overlay,
 .confirm-modal {
@@ -43,7 +39,6 @@ body {
   z-index: 9998 !important;
 }
 
-/* Admin header and sidebar should be below modals */
 header {
   z-index: 40 !important;
 }
@@ -80,6 +75,14 @@ aside, .admin-sidebar {
   min-width: 200px;
 }
 
+/* Responsive popup */
+@media (max-width: 640px) {
+  .leaflet-popup-content {
+    margin: 8px;
+    min-width: 150px;
+  }
+}
+
 .leaflet-popup-close-button {
   font-size: 20px !important;
   padding: 4px 8px !important;
@@ -94,7 +97,6 @@ aside, .admin-sidebar {
   box-shadow: 0 3px 14px rgba(0,0,0,0.4);
 }
 
-/* Fix leaflet zoom controls */
 .leaflet-control-zoom {
   border: none !important;
 }
@@ -114,23 +116,33 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Custom scrollbar - Hide on mobile */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+/* Mobile: Hide scrollbar */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }
 
 /* Animations */
@@ -175,4 +187,66 @@ html {
 
 .animate-scale-in {
   animation: scale-in 0.3s ease-out;
+}
+
+/* Responsive Typography */
+@layer base {
+  h1 {
+    @apply text-2xl sm:text-3xl lg:text-4xl xl:text-5xl;
+  }
+  
+  h2 {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+  
+  h3 {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  p {
+    @apply text-sm sm:text-base;
+  }
+}
+
+/* Utility classes for line clamping */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Touch-friendly buttons on mobile */
+@media (max-width: 767px) {
+  button,
+  a.button,
+  input[type="submit"] {
+    min-height: 44px;
+  }
+}
+
+/* Prevent text selection on buttons */
+button {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+/* Responsive container padding */
+.container-responsive {
+  @apply px-3 sm:px-4 lg:px-6 xl:px-8;
 }
