@@ -7,11 +7,14 @@ export default function QueueManagementPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState([]);
-  const [filter, setFilter] = useState('waiting');
+  const [allQueue, setAllQueue] = useState([]); // ✅ NEW - Store all queue items for counts
+  const [filter, setFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchQueue();
+    const interval = setInterval(fetchQueue, 15000);
+    return () => clearInterval(interval);
   }, [filter]);
 
   const fetchQueue = async () => {
@@ -22,6 +25,17 @@ export default function QueueManagementPage() {
       
       if (data.success) {
         setQueue(data.queue || []);
+        
+        // ✅ NEW - Fetch all queue items for accurate counts
+        if (filter !== 'all') {
+          const allResponse = await fetch(`/api/salon-admin/queue?status=all`);
+          const allData = await allResponse.json();
+          if (allData.success) {
+            setAllQueue(allData.queue || []);
+          }
+        } else {
+          setAllQueue(data.queue || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching queue:', error);
@@ -77,9 +91,10 @@ export default function QueueManagementPage() {
 
   const getStatusColor = (status) => {
     const colors = {
+      confirmed: 'bg-green-100 text-green-800 border-green-300',
       waiting: 'bg-yellow-100 text-yellow-800 border-yellow-300',
       'in-progress': 'bg-blue-100 text-blue-800 border-blue-300',
-      completed: 'bg-green-100 text-green-800 border-green-300',
+      completed: 'bg-emerald-100 text-emerald-800 border-emerald-300',
       cancelled: 'bg-red-100 text-red-800 border-red-300',
       'no-show': 'bg-gray-100 text-gray-800 border-gray-300'
     };
@@ -88,18 +103,40 @@ export default function QueueManagementPage() {
 
   const getStatusActions = (item) => {
     const actions = {
+      confirmed: [
+        { label: 'Move to Waiting', status: 'waiting', color: 'bg-yellow-600 hover:bg-yellow-700' },
+        { label: 'Start Service', status: 'in-progress', color: 'bg-blue-600 hover:bg-blue-700' }
+      ],
       waiting: [
         { label: 'Start Service', status: 'in-progress', color: 'bg-blue-600 hover:bg-blue-700' },
         { label: 'No Show', status: 'no-show', color: 'bg-gray-600 hover:bg-gray-700' }
       ],
       'in-progress': [
-        { label: 'Complete', status: 'completed', color: 'bg-green-600 hover:bg-green-700' }
+        { label: 'Complete', status: 'completed', color: 'bg-emerald-600 hover:bg-emerald-700' }
       ],
       completed: [],
       cancelled: [],
       'no-show': []
     };
     return actions[item.status] || [];
+  };
+
+  const getStatusEmoji = (status) => {
+    const emojis = {
+      confirmed: '✅',
+      waiting: '⏳',
+      'in-progress': '✂️',
+      completed: '🎉',
+      cancelled: '❌',
+      'no-show': '👻'
+    };
+    return emojis[status] || '📋';
+  };
+
+  // ✅ FIXED - Calculate counts from allQueue instead of filtered queue
+  const getStatusCount = (status) => {
+    if (status === 'all') return allQueue.length;
+    return allQueue.filter(q => q.status === status).length;
   };
 
   if (loading) {
@@ -130,14 +167,15 @@ export default function QueueManagementPage() {
           </button>
         </div>
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs - ✅ FIXED COUNTS */}
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6">
           <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
             {[
-              { value: 'all', label: 'All', emoji: '📋', count: queue.length },
-              { value: 'waiting', label: 'Waiting', emoji: '⏳', count: queue.filter(q => q.status === 'waiting').length },
-              { value: 'in-progress', label: 'In Progress', emoji: '✂️', count: queue.filter(q => q.status === 'in-progress').length },
-              { value: 'completed', label: 'Completed', emoji: '✅', count: queue.filter(q => q.status === 'completed').length }
+              { value: 'all', label: 'All', emoji: '📋' },
+              { value: 'confirmed', label: 'Confirmed', emoji: '✅' },
+              { value: 'waiting', label: 'Waiting', emoji: '⏳' },
+              { value: 'in-progress', label: 'In Progress', emoji: '✂️' },
+              { value: 'completed', label: 'Completed', emoji: '🎉' }
             ].map(tab => (
               <button
                 key={tab.value}
@@ -153,7 +191,7 @@ export default function QueueManagementPage() {
                 <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                   filter === tab.value ? 'bg-white/20' : 'bg-gray-200'
                 }`}>
-                  {tab.count}
+                  {getStatusCount(tab.value)} {/* ✅ FIXED - Use getStatusCount */}
                 </span>
               </button>
             ))}
@@ -164,25 +202,33 @@ export default function QueueManagementPage() {
         <div className="space-y-3 sm:space-y-4">
           {queue.length > 0 ? (
             queue.map((item, index) => (
-              <div key={item._id} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div key={item._id} className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 lg:gap-6">
                   {/* Customer Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold flex-shrink-0">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-lg sm:text-2xl font-bold flex-shrink-0 shadow-lg">
                         #{item.queueNumber}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{item.customerName}</h3>
-                        <p className="text-sm sm:text-base text-gray-600 truncate">📞 {item.customerPhone}</p>
-                        {item.customerEmail && <p className="text-xs sm:text-sm text-gray-600 truncate">✉️ {item.customerEmail}</p>}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900">{item.customerName}</h3>
+                          <span className="text-xl">{getStatusEmoji(item.status)}</span>
+                        </div>
+                        <p className="text-sm sm:text-base text-gray-600">📞 {item.customerPhone}</p>
+                        {item.customerEmail && <p className="text-xs sm:text-sm text-gray-600">✉️ {item.customerEmail}</p>}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Service</p>
-                        <p className="text-gray-900 font-semibold truncate">{item.serviceName || 'Walk-in'}</p>
+                        <p className="text-gray-900 font-semibold truncate">
+                          {item.services && item.services.length > 0 
+                            ? item.services.map(s => s.name).join(', ')
+                            : item.serviceName || 'Walk-in'
+                          }
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Wait Time</p>
@@ -191,7 +237,7 @@ export default function QueueManagementPage() {
                       <div>
                         <p className="text-gray-500 font-medium mb-1">Check-in</p>
                         <p className="text-gray-900 font-semibold">
-                          {new Date(item.checkInTime).toLocaleTimeString('en-US', { 
+                          {new Date(item.checkInTime).toLocaleTimeString('en-IN', { 
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}
@@ -204,6 +250,12 @@ export default function QueueManagementPage() {
                         </span>
                       </div>
                     </div>
+
+                    {item.appointmentDate && (
+                      <div className="mt-2 text-xs sm:text-sm text-gray-600">
+                        📅 Appointment: {new Date(item.appointmentDate).toLocaleDateString('en-IN')}
+                      </div>
+                    )}
 
                     {item.notes && (
                       <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
@@ -237,7 +289,12 @@ export default function QueueManagementPage() {
             <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
               <div className="text-5xl sm:text-6xl mb-4">🎯</div>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No customers in queue</h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">Add customers to start managing your queue</p>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                {filter !== 'all' 
+                  ? `No ${filter} bookings found` 
+                  : 'Add customers to start managing your queue'
+                }
+              </p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm sm:text-base"
