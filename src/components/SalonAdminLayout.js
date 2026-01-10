@@ -1,195 +1,166 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
 export default function SalonAdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
-
-      if (!response.ok || !data.user) {
-        router.push('/login');
-        return;
-      }
-
-      if (data.user.role !== 'salon-admin') {
-        router.push('/login');
-        return;
-      }
-
-      setUser(data.user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      router.push('/login');
-    } finally {
+    if (!user) {
+      router.push('/auth/login');
+    } else if (user.role !== 'salon-admin') {
+      router.push('/');
+    } else {
       setLoading(false);
     }
+  }, [user, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.push('/auth/login');
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
+  const menuItems = [
+    { name: 'Dashboard', path: '/salon-admin', icon: '📊', exact: true },
+    { name: 'Queue', path: '/salon-admin/queue', icon: '👥' },
+    { name: 'Services', path: '/salon-admin/services', icon: '✂️' },
+    { name: 'Staff', path: '/salon-admin/staff', icon: '👨‍💼' },
+    { name: 'Profile', path: '/salon-admin/profile', icon: '🏪' },
+    { name: 'Settings', path: '/salon-admin/settings', icon: '⚙️' },
+  ];
+
+  const isActive = (item) => {
+    if (item.exact) {
+      return pathname === item.path;
     }
+    return pathname?.startsWith(item.path);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm sm:text-base">Loading...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const navItems = [
-    { href: '/salon-admin', icon: '📊', label: 'Dashboard' },
-    { href: '/salon-admin/queue', icon: '👥', label: 'Queue Management' },
-    { href: '/salon-admin/bookings', icon: '📅', label: 'All Bookings' },
-    { href: '/salon-admin/bookings/pending', icon: '⏳', label: 'Pending Bookings' },
-    { href: '/salon-admin/services', icon: '✂️', label: 'Services' },
-    { href: '/salon-admin/staff', icon: '👨‍💼', label: 'Staff' },
-    { href: '/salon-admin/profile', icon: '⚙️', label: 'Settings' },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-green-700 shadow-lg z-50">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-white hover:bg-green-800 rounded-lg"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label="Toggle Menu"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {sidebarOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
-            <h2 className="text-lg font-bold text-white">Salon Admin</h2>
+            <h1 className="text-lg font-bold text-gray-900">Salon Admin</h1>
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            aria-label="Logout"
           >
-            Logout
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`
-        fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-50
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        {/* Desktop Logo Section */}
-        <div className="hidden lg:block p-6 border-b border-green-500">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-2xl">💈</div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Salon Admin</h2>
-              <p className="text-xs text-green-100">Management Panel</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Close Button */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-green-500">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
-            <div>
-              <h2 className="text-base font-bold text-white">Salon Admin</h2>
-              <p className="text-xs text-green-100">Management Panel</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 text-white hover:bg-green-800 rounded-lg"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* User Info */}
-        {user && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 bg-green-800 bg-opacity-30">
+      <aside
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 transition-transform duration-300 z-50 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0 lg:w-64 w-72`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between lg:justify-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-sm sm:text-base">
-                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'A'}
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                S
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{user.name || 'Admin User'}</p>
-                <p className="text-xs text-green-200 truncate">{user.email}</p>
+              <div>
+                <h2 className="font-bold text-gray-900 text-lg">Salon Admin</h2>
+                <p className="text-xs text-gray-600">{user?.email}</p>
               </div>
             </div>
-          </div>
-        )}
-        
-        {/* Navigation */}
-        <nav className="px-3 py-4 sm:py-6 space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
-                  isActive 
-                    ? 'bg-white text-green-700 shadow-md' 
-                    : 'text-white hover:bg-green-800 hover:bg-opacity-50'
-                }`}
-              >
-                <span className="text-lg sm:text-xl">{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-
-          {/* Logout Button (Desktop) */}
-          <div className="hidden lg:block pt-4 mt-4 border-t border-green-500">
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-white hover:bg-red-600 hover:bg-opacity-80 transition-all"
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
             >
-              <span className="text-xl">🚪</span>
-              <span>Logout</span>
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              href={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium ${
+                isActive(item)
+                  ? 'bg-green-100 text-green-700 shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <span className="text-2xl">{item.icon}</span>
+              <span className="text-base">{item.name}</span>
+            </Link>
+          ))}
         </nav>
+
+        {/* Logout Button (Desktop) */}
+        <div className="hidden lg:block absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 lg:pt-20 p-4 sm:p-6 lg:p-8">
-        {children}
+      <main className="lg:ml-64 min-h-screen">
+        <div className="p-4 sm:p-6 lg:p-8 pt-20 lg:pt-8">
+          {children}
+        </div>
       </main>
     </div>
   );
