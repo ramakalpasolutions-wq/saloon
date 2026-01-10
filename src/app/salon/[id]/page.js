@@ -16,15 +16,118 @@ export default function SalonDetailPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
-  const [selectedStaff, setSelectedStaff] = useState(null);  // ✅ NEW: Selected staff
+  const [selectedStaff, setSelectedStaff] = useState(null);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [dateTimeError, setDateTimeError] = useState(''); // ✅ NEW
+
+  // ✅ Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // ✅ Get current time in HH:MM format
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // ✅ Check if selected date is today
+  const isToday = (date) => {
+    return date === getTodayDate();
+  };
+
+  // ✅ Validate date and time
+  const validateDateTime = (date, time) => {
+    if (!date || !time) {
+      return true; // Allow empty for now
+    }
+
+    const now = new Date();
+    const selected = new Date(date);
+    const [hours, minutes] = time.split(':').map(Number);
+    selected.setHours(hours, minutes, 0, 0);
+
+    // Check if selected datetime is in the past
+    if (selected < now) {
+      setDateTimeError('⚠️ Cannot select past date/time');
+      return false;
+    }
+
+    // Check if it's at least 15 minutes from now
+    const minFutureTime = new Date(now.getTime() + 15 * 60000);
+    if (selected < minFutureTime) {
+      setDateTimeError('⚠️ Please select a time at least 15 minutes from now');
+      return false;
+    }
+
+    setDateTimeError('');
+    return true;
+  };
+
+  // ✅ Generate time slots (filtered for today)
+  const generateTimeSlots = () => {
+    const slots = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const selectedIsToday = isToday(appointmentDate);
+
+    for (let hour = 9; hour <= 21; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        // Skip past times if date is today
+        if (selectedIsToday) {
+          if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
+            continue;
+          }
+        }
+
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(timeString);
+      }
+    }
+
+    return slots;
+  };
+
+  // ✅ Handle date change
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setAppointmentDate(newDate);
+    
+    // If selecting today and current time is past selected time, clear time
+    if (isToday(newDate) && appointmentTime) {
+      const currentTime = getCurrentTime();
+      if (appointmentTime <= currentTime) {
+        setAppointmentTime('');
+        setDateTimeError('⚠️ Please select a valid future time');
+      } else {
+        validateDateTime(newDate, appointmentTime);
+      }
+    } else {
+      validateDateTime(newDate, appointmentTime);
+    }
+  };
+
+  // ✅ Handle time change
+  const handleTimeChange = (e) => {
+    const newTime = e.target.value;
+    setAppointmentTime(newTime);
+    validateDateTime(appointmentDate, newTime);
+  };
 
   useEffect(() => {
     if (params.id) {
       fetchSalonDetails();
     }
     
-    const today = new Date().toISOString().split('T')[0];
+    // Set today's date as default
+    const today = getTodayDate();
     setAppointmentDate(today);
   }, [params.id]);
 
@@ -65,7 +168,6 @@ export default function SalonDetailPage() {
     );
   };
 
-  // ✅ NEW: Handle staff selection
   const handleStaffSelect = (staffId) => {
     setSelectedStaff(staffId === selectedStaff ? null : staffId);
   };
@@ -91,7 +193,12 @@ export default function SalonDetailPage() {
       return;
     }
 
-    // ✅ VALIDATE STAFF SELECTION (optional or required)
+    // ✅ Final validation before submit
+    if (!validateDateTime(appointmentDate, appointmentTime)) {
+      alert(dateTimeError || 'Please select a valid future date and time');
+      return;
+    }
+
     if (!selectedStaff) {
       const confirmWithoutStaff = confirm('No staff selected. Continue with any available staff?');
       if (!confirmWithoutStaff) {
@@ -112,7 +219,7 @@ export default function SalonDetailPage() {
           services: selectedServices,
           appointmentDate,
           appointmentTime,
-          staffId: selectedStaff,  // ✅ ADD STAFF ID
+          staffId: selectedStaff,
         }),
       });
 
@@ -145,17 +252,6 @@ export default function SalonDetailPage() {
       const service = services.find(s => s._id === serviceId);
       return total + (service?.duration || 0);
     }, 0);
-  };
-
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 21; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    return slots;
   };
 
   if (loading) {
@@ -269,7 +365,7 @@ export default function SalonDetailPage() {
                 )}
               </div>
 
-              {/* ✅ STAFF SELECTION SECTION */}
+              {/* Staff Selection Section */}
               {staff.length > 0 && (
                 <div className="bg-white rounded-xl shadow-md p-6">
                   <div className="flex items-center justify-between mb-6">
@@ -288,7 +384,6 @@ export default function SalonDetailPage() {
                             : 'border-gray-200 hover:border-green-300 hover:shadow-sm'
                         }`}
                       >
-                        {/* Staff Photo */}
                         {member.photo?.url ? (
                           <img src={member.photo.url} alt={member.name} className="w-16 h-16 rounded-full object-cover" />
                         ) : (
@@ -297,7 +392,6 @@ export default function SalonDetailPage() {
                           </div>
                         )}
                         
-                        {/* Staff Info */}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-bold text-gray-900">{member.name}</h3>
@@ -358,7 +452,6 @@ export default function SalonDetailPage() {
                       </div>
                     </div>
 
-                    {/* ✅ SELECTED STAFF DISPLAY */}
                     {selectedStaff && (
                       <div className="bg-blue-50 rounded-lg p-4">
                         <h4 className="font-semibold text-gray-900 mb-2">Selected Staff</h4>
@@ -400,23 +493,26 @@ export default function SalonDetailPage() {
                         />
                       </div>
 
+                      {/* ✅ Date Input with Validation */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Date *</label>
                         <input
                           type="date"
                           value={appointmentDate}
-                          onChange={(e) => setAppointmentDate(e.target.value)}
-                          min={new Date().toISOString().split('T')[0]}
+                          onChange={handleDateChange}
+                          min={getTodayDate()}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                           required
                         />
+                        <p className="text-xs text-gray-500 mt-1">📅 Today or later</p>
                       </div>
 
+                      {/* ✅ Time Select with Validation */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Time *</label>
                         <select
                           value={appointmentTime}
-                          onChange={(e) => setAppointmentTime(e.target.value)}
+                          onChange={handleTimeChange}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                           required
                         >
@@ -425,14 +521,24 @@ export default function SalonDetailPage() {
                             <option key={time} value={time}>{time}</option>
                           ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          ⏰ {isToday(appointmentDate) ? `Available from ${getCurrentTime()}` : 'Any time 9 AM - 9 PM'}
+                        </p>
                       </div>
+
+                      {/* ✅ Date/Time Error Display */}
+                      {dateTimeError && (
+                        <div className="p-3 bg-red-50 border-2 border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800 font-medium">{dateTimeError}</p>
+                        </div>
+                      )}
                     </div>
 
                     <button
                       onClick={handleCheckIn}
-                      disabled={checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime}
+                      disabled={checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime || !!dateTimeError}
                       className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
-                        checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime
+                        checkingIn || !customerName || !customerPhone || !appointmentDate || !appointmentTime || dateTimeError
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:shadow-xl'
                       }`}

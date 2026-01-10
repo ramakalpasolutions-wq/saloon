@@ -271,7 +271,7 @@ export default function FindSalonPage() {
                 </svg>
               </div>
 
-              <button
+              {/* <button
                 onClick={getCurrentLocation}
                 disabled={locationLoading}
                 className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-md sm:shadow-lg mb-3 text-sm sm:text-base"
@@ -296,7 +296,7 @@ export default function FindSalonPage() {
                     <span>Use My Location</span>
                   </>
                 )}
-              </button>
+              </button> */}
 
               {/* ✅ Location Error Message */}
               {locationError && (

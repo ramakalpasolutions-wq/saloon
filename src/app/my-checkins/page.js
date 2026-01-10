@@ -85,6 +85,53 @@ function MyCheckinsContent() {
     }
   };
 
+  // ✅ Helper to check if appointment is in the past
+  const isAppointmentPast = (appointmentDate, appointmentTime) => {
+    if (!appointmentDate) return false;
+    
+    const now = new Date();
+    const apptDate = new Date(appointmentDate);
+    
+    if (appointmentTime) {
+      const [hours, minutes] = appointmentTime.split(':').map(Number);
+      apptDate.setHours(hours, minutes, 0, 0);
+    } else {
+      apptDate.setHours(23, 59, 59, 999);
+    }
+    
+    return apptDate < now;
+  };
+
+  // ✅ Helper to format relative time
+  const getRelativeTime = (appointmentDate, appointmentTime) => {
+    if (!appointmentDate) return null;
+    
+    const now = new Date();
+    const apptDate = new Date(appointmentDate);
+    
+    if (appointmentTime) {
+      const [hours, minutes] = appointmentTime.split(':').map(Number);
+      apptDate.setHours(hours, minutes, 0, 0);
+    }
+    
+    const diffMs = apptDate - now;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMs < 0) {
+      return '⏰ Past appointment';
+    } else if (diffMins < 60) {
+      return `⏰ In ${diffMins} minutes`;
+    } else if (diffHours < 24) {
+      return `⏰ In ${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+    } else if (diffDays < 7) {
+      return `📅 In ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+    } else {
+      return `📅 ${apptDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 pt-16 sm:pt-20 pb-8 sm:pb-12 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto">
@@ -175,74 +222,96 @@ function MyCheckinsContent() {
               </span>
             </div>
 
-            {checkins.map((checkin) => (
-              <div
-                key={checkin._id}
-                className="bg-white rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all border-l-4 border-green-600"
-              >
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">
-                      {checkin.salon?.name || 'Salon'}
-                    </h3>
-                    {checkin.salon?.address && (
-                      <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
-                        📍 {checkin.salon.address}, {checkin.salon.city}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm border-2 flex-shrink-0 ${getStatusColor(checkin.status)}`}>
-                    {getStatusIcon(checkin.status)} {checkin.status.toUpperCase()}
-                  </span>
-                </div>
+            {checkins.map((checkin) => {
+              const isPast = isAppointmentPast(checkin.appointmentDate, checkin.appointmentTime);
+              const relativeTime = getRelativeTime(checkin.appointmentDate, checkin.appointmentTime);
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl sm:text-2xl">📅</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-600">Appointment</p>
-                      <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">
-                        {checkin.appointmentDate && checkin.appointmentTime
-                          ? `${new Date(checkin.appointmentDate).toLocaleDateString('en-IN')} at ${checkin.appointmentTime}`
-                          : new Date(checkin.checkedInAt || checkin.checkInTime).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl sm:text-2xl">#️⃣</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-600">Queue Position</p>
-                      <p className="font-semibold text-sm sm:text-base text-gray-900">#{checkin.position || checkin.queueNumber}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Services */}
-                {checkin.services && checkin.services.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Services:</p>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {checkin.services.map((service, idx) => (
-                        <span key={idx} className="px-2 py-1 sm:px-3 sm:py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium">
-                          ✂️ {service.name} {service.price && `- ₹${service.price}`}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* View Details Button */}
-                <Link
-                  href={`/queue/${checkin._id}`}
-                  className="block w-full py-2 px-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg text-center font-semibold hover:from-green-700 hover:to-blue-700 transition-all text-sm sm:text-base"
+              return (
+                <div
+                  key={checkin._id}
+                  className={`bg-white rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all border-l-4 ${
+                    isPast ? 'border-gray-400 opacity-75' : 'border-green-600'
+                  }`}
                 >
-                  View Details →
-                </Link>
-              </div>
-            ))}
+                  {/* ✅ Past Appointment Badge */}
+                  {isPast && (
+                    <div className="mb-3 px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-lg inline-block">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-700">
+                        ⏰ Past Appointment
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">
+                        {checkin.salon?.name || 'Salon'}
+                      </h3>
+                      {checkin.salon?.address && (
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
+                          📍 {checkin.salon.address}, {checkin.salon.city}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm border-2 flex-shrink-0 ${getStatusColor(checkin.status)}`}>
+                      {getStatusIcon(checkin.status)} {checkin.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl">📅</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-600">Appointment</p>
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                          {checkin.appointmentDate && checkin.appointmentTime
+                            ? `${new Date(checkin.appointmentDate).toLocaleDateString('en-IN')} at ${checkin.appointmentTime}`
+                            : new Date(checkin.checkedInAt || checkin.checkInTime).toLocaleString('en-IN')}
+                        </p>
+                        {/* ✅ Relative Time */}
+                        {relativeTime && (
+                          <p className={`text-xs font-medium mt-1 ${isPast ? 'text-gray-500' : 'text-blue-600'}`}>
+                            {relativeTime}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl sm:text-2xl">#️⃣</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-600">Queue Position</p>
+                        <p className="font-semibold text-sm sm:text-base text-gray-900">#{checkin.position || checkin.queueNumber}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Services */}
+                  {checkin.services && checkin.services.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Services:</p>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        {checkin.services.map((service, idx) => (
+                          <span key={idx} className="px-2 py-1 sm:px-3 sm:py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm font-medium">
+                            ✂️ {service.name} {service.price && `- ₹${service.price}`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* View Details Button */}
+                  <Link
+                    href={`/queue/${checkin._id}`}
+                    className="block w-full py-2 px-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg text-center font-semibold hover:from-green-700 hover:to-blue-700 transition-all text-sm sm:text-base"
+                  >
+                    View Details →
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
 
