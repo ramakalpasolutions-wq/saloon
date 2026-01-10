@@ -13,14 +13,14 @@ export default function FindSalonPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSalon, setSelectedSalon] = useState(null);
-  const [mapCenter, setMapCenter] = useState([17.385, 78.4867]);
+  const [mapCenter, setMapCenter] = useState([17.385, 78.4867]); // Default: Hyderabad
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [showMap, setShowMap] = useState(false); // Mobile map toggle
+  const [showMap, setShowMap] = useState(false);
 
   const getCurrentLocation = useCallback(() => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      alert('❌ Geolocation not supported');
+      console.log('❌ Geolocation not supported');
       return;
     }
 
@@ -41,23 +41,23 @@ export default function FindSalonPage() {
         } catch (error) {
           console.error('❌ Position error:', error);
           setLocationLoading(false);
-          alert('Failed to process location');
         }
       },
       (error) => {
         setLocationLoading(false);
         console.error('❌ Geolocation error:', error.code, error.message);
         
-        let message = 'Location access failed';
-        if (error.code === 1) message = 'Please enable location permissions';
+        // Don't show alert on auto-fetch, just log it
+        let message = 'Location access denied or unavailable';
+        if (error.code === 1) message = 'Location permissions denied';
         else if (error.code === 2) message = 'Location unavailable';
         else if (error.code === 3) message = 'Location timeout';
         
-        alert(message);
+        console.log(message);
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
+        timeout: 10000,
         maximumAge: 300000
       }
     );
@@ -90,9 +90,17 @@ export default function FindSalonPage() {
     setFilteredSalons(sorted);
   };
 
+  // ✅ AUTO-FETCH LOCATION ON PAGE LOAD
   useEffect(() => {
     fetchSalons();
-  }, []);
+    
+    // Auto-fetch location after a short delay (allows page to load first)
+    const timer = setTimeout(() => {
+      getCurrentLocation();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [getCurrentLocation]);
 
   useEffect(() => {
     let filtered = salons;
@@ -103,8 +111,25 @@ export default function FindSalonPage() {
         salon.address?.fullAddress?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+    
+    // Re-sort by distance if user location is available
+    if (userLocation && filtered.length > 0) {
+      filtered = filtered.map(salon => {
+        if (!salon.latitude || !salon.longitude) return { ...salon, distance: null };
+        const distance = getDistance(
+          userLocation[0], userLocation[1],
+          salon.latitude, salon.longitude
+        );
+        return { ...salon, distance };
+      }).sort((a, b) => {
+        if (!a.distance) return 1;
+        if (!b.distance) return -1;
+        return a.distance - b.distance;
+      });
+    }
+    
     setFilteredSalons(filtered);
-  }, [searchTerm, salons]);
+  }, [searchTerm, salons, userLocation]);
 
   const fetchSalons = async () => {
     try {
@@ -138,7 +163,8 @@ export default function FindSalonPage() {
         setSalons(salonsWithWaitTime);
         setFilteredSalons(salonsWithWaitTime);
         
-        if (salonsWithWaitTime.length > 0) {
+        // Set initial map center to first salon with coordinates
+        if (salonsWithWaitTime.length > 0 && !userLocation) {
           const firstSalon = salonsWithWaitTime.find(s => s.latitude && s.longitude);
           if (firstSalon) {
             setMapCenter([firstSalon.latitude, firstSalon.longitude]);
@@ -218,7 +244,7 @@ export default function FindSalonPage() {
       <Header />
       <div className="pt-14 sm:pt-16 lg:pt-20 h-screen flex flex-col">
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Salon List - Responsive width */}
+          {/* Salon List */}
           <div className="w-full lg:w-80 xl:w-96 2xl:w-[28rem] bg-white shadow-lg overflow-y-auto">
             {/* Search Header */}
             <div className="p-3 sm:p-4 border-b sticky top-0 bg-white z-10">
@@ -248,6 +274,14 @@ export default function FindSalonPage() {
                     <span className="hidden xs:inline">Finding location...</span>
                     <span className="xs:hidden">Finding...</span>
                   </>
+                ) : userLocation ? (
+                  <>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="hidden xs:inline">📍 Location Found!</span>
+                    <span className="xs:hidden">Located!</span>
+                  </>
                 ) : (
                   <>
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -265,7 +299,7 @@ export default function FindSalonPage() {
                   <span className="block sm:inline">{filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''}</span>
                   {userLocation && filteredSalons[0]?.distance && (
                     <span className="text-blue-600 block sm:inline sm:ml-2 truncate">
-                      📍 {filteredSalons[0].distance.toFixed(1)}km
+                      📍 Nearest: {filteredSalons[0].distance.toFixed(1)}km
                     </span>
                   )}
                 </div>
@@ -366,7 +400,7 @@ export default function FindSalonPage() {
             </div>
           </div>
 
-          {/* Map - Responsive display */}
+          {/* Map */}
           <div className={`flex-1 relative ${showMap ? 'block' : 'hidden lg:block'}`}>
             {filteredSalons.length > 0 ? (
               <MapView 
