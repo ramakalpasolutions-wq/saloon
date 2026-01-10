@@ -75,7 +75,7 @@ function LoginForm() {
         <div className="text-center mb-8">
           <Link href="/">
             <h1 className="text-4xl font-bold text-green-600 mb-2">
-              Green Saloon
+               DeepCode Labs
             </h1>
           </Link>
           <p className="text-black">Welcome back! Please sign in</p>

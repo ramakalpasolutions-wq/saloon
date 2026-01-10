@@ -14,6 +14,10 @@ export default function SalonAdminLayout({ children }) {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   const checkAuth = async () => {
     try {
       const response = await fetch('/api/auth/me');
@@ -60,24 +64,22 @@ export default function SalonAdminLayout({ children }) {
 
   const navItems = [
     { href: '/salon-admin', icon: '📊', label: 'Dashboard' },
-    { href: '/salon-admin/queue', icon: '👥', label: 'Queue Management' },
-    { href: '/salon-admin/bookings', icon: '📅', label: 'All Bookings' },
-    { href: '/salon-admin/bookings/pending', icon: '⏳', label: 'Pending Bookings' },
+    { href: '/salon-admin/queue', icon: '👥', label: 'Queue' },
+    { href: '/salon-admin/bookings', icon: '📅', label: 'Bookings' },
     { href: '/salon-admin/services', icon: '✂️', label: 'Services' },
     { href: '/salon-admin/staff', icon: '👨‍💼', label: 'Staff' },
-    { href: '/salon-admin/profile', icon: '⚙️', label: 'Settings' },
+    { href: '/salon-admin/profile', icon: '⚙️', label: 'Profile' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-green-700 shadow-lg z-50">
+      {/* Mobile Header - ALWAYS VISIBLE */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-green-700 shadow-lg z-30">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-white hover:bg-green-800 rounded-lg transition-colors"
-              aria-label="Toggle Menu"
+              className="p-2 text-white hover:bg-green-800 rounded-lg"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {sidebarOpen ? (
@@ -92,29 +94,16 @@ export default function SalonAdminLayout({ children }) {
           </div>
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors"
+            className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
           >
             Logout
           </button>
         </div>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={`
-        fixed left-0 top-0 h-full w-72 sm:w-80 lg:w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-50
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        {/* Desktop Logo Section */}
-        <div className="hidden lg:block p-6 border-b border-green-500">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-xl overflow-y-auto z-10">
+        <div className="p-6 border-b border-green-500">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-2xl">💈</div>
             <div>
@@ -124,42 +113,20 @@ export default function SalonAdminLayout({ children }) {
           </div>
         </div>
 
-        {/* Mobile Close Button */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-green-500">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
-            <div>
-              <h2 className="text-base font-bold text-white">Salon Admin</h2>
-              <p className="text-xs text-green-100">Management Panel</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-2 text-white hover:bg-green-800 rounded-lg transition-colors"
-            aria-label="Close Menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* User Info */}
         {user && (
           <div className="px-4 py-4 bg-green-800/30 border-b border-green-500">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-base sm:text-lg flex-shrink-0">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-green-600 font-bold text-lg">
                 {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm sm:text-base font-semibold text-white truncate">{user.name || 'Admin User'}</p>
+                <p className="text-base font-semibold text-white truncate">{user.name || 'Admin'}</p>
                 <p className="text-xs text-green-200 truncate">{user.email}</p>
               </div>
             </div>
           </div>
         )}
         
-        {/* Navigation */}
         <nav className="px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -167,21 +134,19 @@ export default function SalonAdminLayout({ children }) {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
                   isActive 
                     ? 'bg-white text-green-700 shadow-md' 
                     : 'text-white hover:bg-green-800/50'
                 }`}
               >
-                <span className="text-xl sm:text-2xl">{item.icon}</span>
-                <span className="truncate">{item.label}</span>
+                <span className="text-2xl">{item.icon}</span>
+                <span>{item.label}</span>
               </Link>
             );
           })}
 
-          {/* Logout Button (Desktop) */}
-          <div className="hidden lg:block pt-4 mt-4 border-t border-green-500">
+          <div className="pt-4 mt-4 border-t border-green-500">
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-white hover:bg-red-600/80 transition-all"
@@ -193,9 +158,69 @@ export default function SalonAdminLayout({ children }) {
         </nav>
       </aside>
 
-      {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen">
-        <div className="pt-16 lg:pt-0 p-4 sm:p-6 lg:p-8">
+      {/* Mobile Sidebar - Slides in with transform */}
+      <aside 
+        className={`lg:hidden fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-green-700 shadow-2xl overflow-y-auto z-50 transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-green-500">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xl">💈</div>
+            <div>
+              <h2 className="text-base font-bold text-white">Salon Admin</h2>
+              <p className="text-xs text-green-100">Menu</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-2 text-white hover:bg-green-800 rounded-lg"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {user && (
+          <div className="px-4 py-4 bg-green-800/30 border-b border-green-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold">
+                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'J'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{user.name || 'John Doe'}</p>
+                <p className="text-xs text-green-200 truncate">{user.email || 'john@glamour.com'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <nav className="px-3 py-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
+                  isActive 
+                    ? 'bg-white text-green-700 shadow-md' 
+                    : 'text-white hover:bg-green-800/50'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-sm">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content - ALWAYS INTERACTIVE */}
+      <main className="lg:ml-64">
+        <div className="pt-16 lg:pt-0 p-4 sm:p-6 lg:p-8 min-h-screen">
           {children}
         </div>
       </main>
