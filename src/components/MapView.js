@@ -1,8 +1,9 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import L from 'leaflet';
 import Link from 'next/link';
+import { useMap } from 'react-leaflet';
 
 // Fix Leaflet markers
 delete L.Icon.Default.prototype._getIconUrl;
@@ -18,28 +19,45 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => ({ default: 
 const Marker = dynamic(() => import('react-leaflet').then(mod => ({ default: mod.Marker })), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => ({ default: mod.Popup })), { ssr: false });
 
+// ✅ Component to update map center dynamically
+function MapCenterUpdater({ center }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (center && Array.isArray(center) && center.length === 2) {
+      try {
+        const currentZoom = map.getZoom ? map.getZoom() : 13;
+        map.setView(center, currentZoom, {
+          animate: true,
+          duration: 1
+        });
+      } catch (error) {
+        console.error('Map setView error:', error);
+      }
+    }
+  }, [center, map]);
+
+  return null;
+}
+
 export default function MapView({ salons = [], center = [17.385, 78.4867], onMarkerClick, userLocation }) {
   // 🎨 Wait time color-coded markers
   const getWaitTimeIcon = (salon) => {
     const waitMinutes = salon.estimatedWaitTime || 0;
-    let color, emoji, label;
+    let color, emoji;
     
     if (waitMinutes === 0) {
       color = '#10b981';
       emoji = '📱';
-      label = '';
     } else if (waitMinutes <= 15) {
       color = '#10b981';
       emoji = waitMinutes;
-      label = '';
     } else if (waitMinutes <= 30) {
       color = '#f59e0b';
       emoji = waitMinutes;
-      label = '';
     } else {
       color = '#ef4444';
       emoji = waitMinutes;
-      label = '';
     }
     
     return L.divIcon({
@@ -69,6 +87,33 @@ export default function MapView({ salons = [], center = [17.385, 78.4867], onMar
     });
   };
 
+  // ✅ Custom user location icon
+  const getUserLocationIcon = () => {
+    return L.divIcon({
+      className: 'user-location-marker',
+      html: `
+        <div style="
+          position: relative;
+          width: 24px;
+          height: 24px;
+        ">
+          <div style="
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #3b82f6;
+            border: 4px solid white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+          "></div>
+        </div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -12]
+    });
+  };
+
   const validSalons = salons.filter(salon => 
     salon.latitude && salon.longitude &&
     typeof salon.latitude === 'number' &&
@@ -90,7 +135,7 @@ export default function MapView({ salons = [], center = [17.385, 78.4867], onMar
   return (
     <MapContainer
       center={center}
-      zoom={12}
+      zoom={13}
       style={{ height: '100%', width: '100%' }}
       className="z-0"
     >
@@ -99,9 +144,12 @@ export default function MapView({ salons = [], center = [17.385, 78.4867], onMar
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
       
+      {/* ✅ Update map center when prop changes */}
+      <MapCenterUpdater center={center} />
+      
       {/* User Location */}
       {userLocation && (
-        <Marker position={userLocation}>
+        <Marker position={userLocation} icon={getUserLocationIcon()}>
           <Popup>
             <div className="text-center p-2">
               <div className="text-2xl mb-2">📍</div>

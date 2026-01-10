@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Header from '@/components/Header';
@@ -13,55 +13,77 @@ export default function FindSalonPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSalon, setSelectedSalon] = useState(null);
-  const [mapCenter, setMapCenter] = useState([17.385, 78.4867]); // Default: Hyderabad
+  const [mapCenter, setMapCenter] = useState([17.385, 78.4867]);
   const [userLocation, setUserLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [locationError, setLocationError] = useState(null);
 
-  const getCurrentLocation = useCallback(() => {
+  // ✅ IMPROVED: Better geolocation with fallback
+  const getCurrentLocation = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) {
       console.log('❌ Geolocation not supported');
+      setLocationError('Location not supported on this device');
       return;
     }
 
     setLocationLoading(true);
+    setLocationError(null);
     
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const newCenter = [latitude, longitude];
+    // ✅ Try high accuracy first, fallback to low accuracy
+    const tryGetLocation = (useHighAccuracy) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const newCenter = [latitude, longitude];
+            
+            setUserLocation(newCenter);
+            setMapCenter(newCenter);
+            setLocationError(null);
+            
+            console.log('✅ Location found:', newCenter);
+            setLocationLoading(false);
+          } catch (error) {
+            console.error('❌ Position error:', error);
+            setLocationLoading(false);
+          }
+        },
+        (error) => {
+          // ✅ If high accuracy fails, try low accuracy
+          if (useHighAccuracy && error.code === 3) {
+            console.log('⚠️ High accuracy timeout, trying low accuracy...');
+            tryGetLocation(false);
+            return;
+          }
           
-          setUserLocation(newCenter);
-          setMapCenter(newCenter);
-          sortSalonsByDistance(newCenter);
+          setLocationLoading(false);
           
-          console.log('✅ Location found:', newCenter);
-          setLocationLoading(false);
-        } catch (error) {
-          console.error('❌ Position error:', error);
-          setLocationLoading(false);
+          let message = '';
+          if (error.code === 1) {
+            message = 'Location access denied. Please enable location permissions.';
+            console.log('❌ User denied location permission');
+          } else if (error.code === 2) {
+            message = 'Location unavailable. Please check your device settings.';
+            console.log('❌ Location information unavailable');
+          } else if (error.code === 3) {
+            message = 'Location timeout. Showing all salons.';
+            console.log('⚠️ Location timeout - continuing without location');
+          }
+          
+          setLocationError(message);
+          console.log(`⚠️ Geolocation: ${message}`);
+        },
+        {
+          enableHighAccuracy: useHighAccuracy,
+          timeout: useHighAccuracy ? 8000 : 5000,
+          maximumAge: 300000
         }
-      },
-      (error) => {
-        setLocationLoading(false);
-        console.error('❌ Geolocation error:', error.code, error.message);
-        
-        // Don't show alert on auto-fetch, just log it
-        let message = 'Location access denied or unavailable';
-        if (error.code === 1) message = 'Location permissions denied';
-        else if (error.code === 2) message = 'Location unavailable';
-        else if (error.code === 3) message = 'Location timeout';
-        
-        console.log(message);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000
-      }
-    );
-  }, []);
+      );
+    };
+    
+    tryGetLocation(true);
+  };
 
   const getDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
@@ -74,36 +96,43 @@ export default function FindSalonPage() {
     return R * c;
   };
 
-  const sortSalonsByDistance = (userCoords) => {
-    const sorted = salons.map(salon => {
-      if (!salon.latitude || !salon.longitude) return { ...salon, distance: null };
-      const distance = getDistance(
-        userCoords[0], userCoords[1],
-        salon.latitude, salon.longitude
-      );
-      return { ...salon, distance };
-    }).sort((a, b) => {
-      if (!a.distance) return 1;
-      if (!b.distance) return -1;
-      return a.distance - b.distance;
-    });
-    setFilteredSalons(sorted);
-  };
-
-  // ✅ AUTO-FETCH LOCATION ON PAGE LOAD
+  // Fetch salons once on mount
   useEffect(() => {
     fetchSalons();
-    
-    // Auto-fetch location after a short delay (allows page to load first)
+  }, []);
+
+  // Auto-fetch location once on mount (with delay for better UX)
+  useEffect(() => {
     const timer = setTimeout(() => {
       getCurrentLocation();
-    }, 500);
+    }, 1000); // ✅ Increased delay to let page fully load
 
     return () => clearTimeout(timer);
-  }, [getCurrentLocation]);
+  }, []);
 
+  // Sort by distance when location changes
+  useEffect(() => {
+    if (userLocation && salons.length > 0) {
+      const sorted = salons.map(salon => {
+        if (!salon.latitude || !salon.longitude) return { ...salon, distance: null };
+        const distance = getDistance(
+          userLocation[0], userLocation[1],
+          salon.latitude, salon.longitude
+        );
+        return { ...salon, distance };
+      }).sort((a, b) => {
+        if (!a.distance) return 1;
+        if (!b.distance) return -1;
+        return a.distance - b.distance;
+      });
+      setFilteredSalons(sorted);
+    }
+  }, [userLocation]);
+
+  // Filter by search term
   useEffect(() => {
     let filtered = salons;
+    
     if (searchTerm) {
       filtered = salons.filter(salon =>
         salon.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -112,7 +141,6 @@ export default function FindSalonPage() {
       );
     }
     
-    // Re-sort by distance if user location is available
     if (userLocation && filtered.length > 0) {
       filtered = filtered.map(salon => {
         if (!salon.latitude || !salon.longitude) return { ...salon, distance: null };
@@ -129,32 +157,21 @@ export default function FindSalonPage() {
     }
     
     setFilteredSalons(filtered);
-  }, [searchTerm, salons, userLocation]);
+  }, [searchTerm]);
 
   const fetchSalons = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 Fetching salons from /api/salons/public...');
-      
       const response = await fetch('/api/salons/public');
-      console.log('📡 Response status:', response.status);
-      
       const data = await response.json();
-      console.log('📍 API Response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || `API returned ${response.status}`);
       }
 
       if (data.success && data.salons) {
-        console.log(`✅ Received ${data.salons.length} salons`);
-        
-        if (data.salons.length > 0) {
-          console.log('📋 First salon:', data.salons[0]);
-        }
-        
         const salonsWithWaitTime = data.salons.map(salon => ({
           ...salon,
           estimatedWaitTime: Math.floor(Math.random() * 45)
@@ -163,18 +180,13 @@ export default function FindSalonPage() {
         setSalons(salonsWithWaitTime);
         setFilteredSalons(salonsWithWaitTime);
         
-        // Set initial map center to first salon with coordinates
-        if (salonsWithWaitTime.length > 0 && !userLocation) {
+        if (salonsWithWaitTime.length > 0) {
           const firstSalon = salonsWithWaitTime.find(s => s.latitude && s.longitude);
           if (firstSalon) {
             setMapCenter([firstSalon.latitude, firstSalon.longitude]);
-            console.log('📍 Map centered at:', [firstSalon.latitude, firstSalon.longitude]);
-          } else {
-            console.warn('⚠️ No salon has valid coordinates');
           }
         }
       } else {
-        console.warn('⚠️ API response missing success or salons:', data);
         setError('No salons available');
         setSalons([]);
         setFilteredSalons([]);
@@ -244,11 +256,8 @@ export default function FindSalonPage() {
       <Header />
       <div className="pt-14 sm:pt-16 lg:pt-20 h-screen flex flex-col">
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-          {/* Salon List */}
-          <div className="w-full lg:w-80 xl:w-96 2xl:w-[28rem] bg-white shadow-lg overflow-y-auto">
-            {/* Search Header */}
+          <div className={`w-full lg:w-80 xl:w-96 2xl:w-[28rem] bg-white shadow-lg overflow-y-auto ${showMap ? 'hidden lg:block' : 'block'}`}>
             <div className="p-3 sm:p-4 border-b sticky top-0 bg-white z-10">
-              {/* Search Input */}
               <div className="relative mb-3">
                 <input
                   type="text"
@@ -262,7 +271,6 @@ export default function FindSalonPage() {
                 </svg>
               </div>
 
-              {/* Location Button */}
               <button
                 onClick={getCurrentLocation}
                 disabled={locationLoading}
@@ -271,51 +279,52 @@ export default function FindSalonPage() {
                 {locationLoading ? (
                   <>
                     <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span className="hidden xs:inline">Finding location...</span>
-                    <span className="xs:hidden">Finding...</span>
+                    <span>Finding...</span>
                   </>
                 ) : userLocation ? (
                   <>
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
-                    <span className="hidden xs:inline">📍 Location Found!</span>
-                    <span className="xs:hidden">Located!</span>
+                    <span>📍 Located!</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
-                    <span className="hidden xs:inline">Use My Location</span>
-                    <span className="xs:hidden">Location</span>
+                    <span>Use My Location</span>
                   </>
                 )}
               </button>
 
-              {/* Results count and Map toggle */}
+              {/* ✅ Location Error Message */}
+              {locationError && (
+                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800">{locationError}</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between gap-2">
-                <div className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0">
-                  <span className="block sm:inline">{filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''}</span>
+                <div className="text-xs sm:text-sm font-semibold text-gray-700 flex-1">
+                  {filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''}
                   {userLocation && filteredSalons[0]?.distance && (
-                    <span className="text-blue-600 block sm:inline sm:ml-2 truncate">
-                      📍 Nearest: {filteredSalons[0].distance.toFixed(1)}km
+                    <span className="text-blue-600 ml-2">
+                      📍 {filteredSalons[0].distance.toFixed(1)}km
                     </span>
                   )}
                 </div>
                 
-                {/* Mobile Map Toggle */}
                 <button
                   onClick={() => setShowMap(!showMap)}
-                  className="lg:hidden px-2.5 py-1.5 sm:px-3 sm:py-1.5 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap flex-shrink-0"
+                  className="lg:hidden px-2.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold"
                 >
                   {showMap ? '📋 List' : '🗺️ Map'}
                 </button>
               </div>
             </div>
 
-            {/* Salon Cards */}
-            <div className={`divide-y ${showMap ? 'hidden lg:block' : 'block'}`}>
+            <div className="divide-y">
               {filteredSalons.length > 0 ? (
                 filteredSalons.map((salon) => (
                   <div
@@ -326,7 +335,6 @@ export default function FindSalonPage() {
                       selectedSalon?._id === salon._id ? 'bg-green-50 border-l-4 border-green-600' : ''
                     }`}
                   >
-                    {/* Logo */}
                     {salon.logo?.url ? (
                       <img src={salon.logo.url} alt={salon.name} className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg mb-3 shadow-md" />
                     ) : (
@@ -335,10 +343,9 @@ export default function FindSalonPage() {
                       </div>
                     )}
 
-                    {/* Name and Rating */}
                     <div className="flex items-start justify-between mb-2 gap-2">
                       <h3 className="font-bold text-base sm:text-lg text-gray-900 flex-1 line-clamp-1">{salon.name}</h3>
-                      <div className="flex gap-0.5 flex-shrink-0">
+                      <div className="flex gap-0.5">
                         {[...Array(5)].map((_, i) => (
                           <svg key={i} className={`w-3 h-3 sm:w-4 sm:h-4 ${i < Math.floor(salon.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 fill-gray-300'}`} viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -347,20 +354,18 @@ export default function FindSalonPage() {
                       </div>
                     </div>
 
-                    {/* Address */}
                     {salon.address?.fullAddress && (
                       <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">📍 {salon.address.fullAddress}</p>
                     )}
 
-                    {/* Distance and Wait Time Badges */}
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {salon.distance && (
-                        <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap">
+                        <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                           🏃 {salon.distance < 1 ? '<1km' : `${salon.distance.toFixed(1)}km`}
                         </span>
                       )}
                       
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
                         salon.estimatedWaitTime === 0 ? 'bg-green-100 text-green-800' :
                         salon.estimatedWaitTime <= 15 ? 'bg-green-100 text-green-800' :
                         salon.estimatedWaitTime <= 30 ? 'bg-yellow-100 text-yellow-800' :
@@ -370,29 +375,23 @@ export default function FindSalonPage() {
                       </span>
                     </div>
 
-                    {/* Phone */}
                     {salon.phone && (
-                      <p className="text-xs text-gray-500 mb-3 truncate">📞 {salon.phone}</p>
+                      <p className="text-xs text-gray-500 mb-3">📞 {salon.phone}</p>
                     )}
 
-                    {/* Check In Button */}
                     <Link 
                       href={`/salon/${salon._id}`} 
-                      className="block w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-center font-semibold text-sm transition-all shadow-md hover:shadow-lg"
+                      className="block w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 rounded-lg text-center font-semibold text-sm transition-all shadow-md"
                     >
                       Check In →
                     </Link>
                   </div>
                 ))
               ) : (
-                <div className="p-8 sm:p-12 text-center">
-                  <div className="text-4xl sm:text-5xl mb-4">🔍</div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No salons found</h3>
-                  <p className="text-sm sm:text-base text-gray-600 mb-4">Try searching or refresh</p>
-                  <button 
-                    onClick={fetchSalons} 
-                    className="px-4 py-2 sm:px-6 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base"
-                  >
+                <div className="p-8 text-center">
+                  <div className="text-4xl mb-4">🔍</div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">No salons found</h3>
+                  <button onClick={fetchSalons} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     Refresh
                   </button>
                 </div>
@@ -400,10 +399,10 @@ export default function FindSalonPage() {
             </div>
           </div>
 
-          {/* Map */}
-          <div className={`flex-1 relative ${showMap ? 'block' : 'hidden lg:block'}`}>
+          <div className={`flex-1 ${showMap ? 'block' : 'hidden'} lg:block`}>
             {filteredSalons.length > 0 ? (
               <MapView 
+                key={`map-${userLocation ? userLocation.join('-') : 'default'}`}
                 salons={filteredSalons} 
                 center={mapCenter} 
                 onMarkerClick={handleMarkerClick} 
@@ -411,9 +410,9 @@ export default function FindSalonPage() {
               />
             ) : (
               <div className="h-full flex items-center justify-center bg-gray-100">
-                <div className="text-center p-6 sm:p-8">
-                  <div className="text-3xl sm:text-4xl mb-4">🗺️</div>
-                  <p className="text-gray-500 text-sm sm:text-base lg:text-lg">No salons to display</p>
+                <div className="text-center p-6">
+                  <div className="text-3xl mb-4">🗺️</div>
+                  <p className="text-gray-500">No salons to display</p>
                 </div>
               </div>
             )}
