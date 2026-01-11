@@ -55,16 +55,30 @@ export default function SalonAdminLayout({ children }) {
 
   // ✅ NEW - Fetch pending approvals count
   const fetchPendingCount = async () => {
-    try {
-      const response = await fetch('/api/salon-admin/dashboard');
-      const data = await response.json();
-      if (data.success && data.stats) {
-        setPendingCount(data.stats.pendingApprovals || 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch pending count:', error);
+  try {
+    const response = await fetch('/api/salon-admin/dashboard', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store', // avoid caching issues
+    });
+
+    if (!response.ok) {
+      console.error('Dashboard fetch failed:', response.status, response.statusText);
+      return; // stop here, do not call response.json()
     }
-  };
+
+    const data = await response.json();
+    if (data?.success && data?.stats) {
+      setPendingCount(data.stats.pendingApprovals || 0);
+    } else {
+      console.warn('Dashboard returned unexpected shape:', data);
+    }
+  } catch (error) {
+    console.error('Failed to fetch pending count:', error);
+    // Do NOT rethrow; swallow so console doesn’t show uncaught TypeError
+  }
+};
+
 
   const handleLogout = async () => {
     try {
